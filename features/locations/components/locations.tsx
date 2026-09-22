@@ -1,21 +1,39 @@
-'use client';
+"use client";
 
-import { useSuspenseLocations } from '@/features/locations/hooks/use-locations';
+import { useRouter } from "next/navigation";
 
+import { useSuspenseLocations } from "@/features/locations/hooks/use-locations";
+import { LogoutButton } from "@/features/auth/components/logout-button";
 export function Locations() {
-  const { data: users } = useSuspenseLocations({ page: 1, pageSize: 10 });
+  const router = useRouter();
+
+  const { data: users } = useSuspenseLocations({
+    page: 1,
+    pageSize: 10,
+  });
 
   if (users.length === 0) {
-    return <p>No users yet.</p>;
+    return (
+      <div>
+        <p>No users yet.</p>
+
+        <LogoutButton />
+      </div>
+    );
   }
 
+
   return (
-    <ul>
-      {users.map((user) => (
-        <li key={user.id}>
-          <strong>{user.name}</strong> ({user.email})
-        </li>
-      ))}
-    </ul>
+    <div>
+      <ul>
+        {users.map((user) => (
+          <li key={user.id}>
+            <strong>{user.name}</strong> ({user.email})
+          </li>
+        ))}
+      </ul>
+
+      <LogoutButton />
+    </div>
   );
 }
