@@ -11,13 +11,6 @@ import { z } from "zod";
 
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
   Form,
   FormControl,
   FormField,
@@ -32,9 +25,7 @@ const registerSchema = z
   .object({
     name: z.string().min(2, "Name must be at least 2 characters"),
     email: z.email("Please enter a valid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -63,7 +54,6 @@ export function RegisterForm() {
   const signInSocial = async (provider: "github" | "google") => {
     try {
       setSocialPending(true);
-
       await authClient.signIn.social({
         provider,
         callbackURL: "/",
@@ -93,8 +83,7 @@ export function RegisterForm() {
 
             if (
               code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
-              message.includes("already exists") ||
-              message.includes("user already exists")
+              message.includes("already exists")
             ) {
               toast.error("Email already exists, login or use different email.");
               return;
@@ -102,7 +91,7 @@ export function RegisterForm() {
 
             toast.error(ctx.error.message);
           },
-        }
+        },
       );
     } catch (error: unknown) {
       const message =
@@ -112,7 +101,6 @@ export function RegisterForm() {
 
       if (
         message.toLowerCase().includes("already exists") ||
-        message.toLowerCase().includes("user already exists") ||
         message.toLowerCase().includes("422")
       ) {
         toast.error("Email already exists, login or use different email.");
@@ -124,167 +112,143 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle>Get Started</CardTitle>
+    <div className="flex w-full max-w-sm flex-col gap-4">
+      <div className="space-y-2 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">
+          Create your account
+        </h1>
+        <p className="text-sm text-white/65">Start organizing your world with Gemezy</p>
+      </div>
 
-          <CardDescription>
-            Create your account to get started
-          </CardDescription>
-        </CardHeader>
+      <div className="flex flex-col gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending}
+          onClick={() => signInSocial("google")}
+          className="h-13 w-full rounded-xl border-white/20 bg-white/8 text-base font-semibold text-white hover:bg-white/15"
+        >
+          <Image alt="Google" src="/logos/google.svg" width={20} height={20} />
+          Continue with Google
+        </Button>
 
-        <CardContent>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="grid gap-6"
-            >
-              {/* Social Login */}
-              <div className="flex flex-col gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={isPending}
-                  onClick={() => signInSocial("github")}
-                >
-                  <Image
-                    alt="GitHub"
-                    src="/logos/github.svg"
-                    width={20}
-                    height={20}
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isPending}
+          onClick={() => signInSocial("github")}
+          className="h-13 w-full rounded-xl border-white/20 bg-white/8 text-base font-semibold text-white hover:bg-white/15"
+        >
+          <Image alt="GitHub" src="/logos/github_light.svg" width={20} height={20} />
+          Continue with GitHub
+        </Button>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-white/20" />
+        <span className="text-xs font-medium uppercase text-white/50">
+          Or continue with email
+        </span>
+        <div className="h-px flex-1 bg-white/20" />
+      </div>
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Name</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="John Doe"
+                    autoComplete="name"
+                    className="h-12 rounded-xl border-white/20 bg-white/8 text-white placeholder:text-white/40 focus-visible:border-white/50 focus-visible:ring-white/20"
+                    {...field}
                   />
-                  Continue with GitHub
-                </Button>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={isPending}
-                  onClick={() => signInSocial("google")}
-                >
-                  <Image
-                    alt="Google"
-                    src="/logos/google.svg"
-                    width={20}
-                    height={20}
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Email</FormLabel>
+                <FormControl>
+                  <Input
+                    type="email"
+                    placeholder="m@example.com"
+                    autoComplete="email"
+                    className="h-12 rounded-xl border-white/20 bg-white/8 text-white placeholder:text-white/40 focus-visible:border-white/50 focus-visible:ring-white/20"
+                    {...field}
                   />
-                  Continue with Google
-                </Button>
-              </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-              {/* Name */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="*********"
+                    autoComplete="new-password"
+                    className="h-12 rounded-xl border-white/20 bg-white/8 text-white placeholder:text-white/40 focus-visible:border-white/50 focus-visible:ring-white/20"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                    <FormControl>
-                      <Input
-                        placeholder="John Doe"
-                        autoComplete="name"
-                        {...field}
-                      />
-                    </FormControl>
+          <FormField
+            control={form.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-white">Confirm Password</FormLabel>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="*********"
+                    autoComplete="new-password"
+                    className="h-12 rounded-xl border-white/20 bg-white/8 text-white placeholder:text-white/40 focus-visible:border-white/50 focus-visible:ring-white/20"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="h-13 w-full rounded-xl bg-emerald-400 text-base font-bold text-emerald-950 hover:bg-emerald-300"
+          >
+            {form.formState.isSubmitting ? "Creating account..." : "Sign up"}
+          </Button>
+        </form>
+      </Form>
 
-              {/* Email */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="m@example.com"
-                        autoComplete="email"
-                        {...field}
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Password */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        autoComplete="new-password"
-                        {...field}
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Confirm Password */}
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        autoComplete="new-password"
-                        {...field}
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isPending}
-              >
-                {form.formState.isSubmitting
-                  ? "Creating account..."
-                  : "Sign up"}
-              </Button>
-
-              <div className="text-center text-sm">
-                Already have an account?{" "}
-                <Link
-                  href="/login"
-                  className="underline underline-offset-4"
-                >
-                  Login
-                </Link>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+      <div className="text-center text-sm text-white/70">
+        Already have an account?{" "}
+        <Link href="/login" className="font-bold text-white underline underline-offset-4">
+          Login
+        </Link>
+      </div>
     </div>
   );
 }
