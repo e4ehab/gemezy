@@ -20,13 +20,18 @@ import { LocationVisibilityField } from "@/features/locations/components/locatio
 import type { LocationVisibility } from "@/features/locations/constants";
 import { useCreateLocation } from "@/features/locations/hooks/use-locations";
 import { uploadLocationImages } from "@/features/locations/lib/cloudinary-upload";
-import { isGoogleMapsShareUrl } from "@/features/locations/utils";
+import {
+  isGoogleMapsShareUrl,
+  normalizeLocationName,
+} from "@/features/locations/utils";
 
 export function LocationForm() {
   const router = useRouter();
   const createLocation = useCreateLocation();
   const [source, setSource] = useState<LocationSource>("CURRENT");
   const [name, setName] = useState("");
+  const [locationName, setLocationName] = useState("");
+  const [locationNameEdited, setLocationNameEdited] = useState(false);
   const [description, setDescription] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [mapsShareUrl, setMapsShareUrl] = useState("");
@@ -80,6 +85,7 @@ export function LocationForm() {
     );
     const common = {
       name: name.trim(),
+      locationName,
       description: description.trim() || undefined,
       tags,
       images: orderedImageUrls,
@@ -123,7 +129,15 @@ export function LocationForm() {
       />
       <LocationDetailsFields
         name={name}
-        onNameChange={setName}
+        onNameChange={(value) => {
+          setName(value);
+          if (!locationNameEdited) setLocationName(normalizeLocationName(value));
+        }}
+        locationName={locationName}
+        onLocationNameChange={(value) => {
+          setLocationName(normalizeLocationName(value));
+          setLocationNameEdited(true);
+        }}
         description={description}
         onDescriptionChange={setDescription}
         tagsInput={tagsInput}

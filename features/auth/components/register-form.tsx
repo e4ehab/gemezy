@@ -19,10 +19,22 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import {
+  normalizeUsername,
+  USERNAME_FORMAT_ERROR,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  USERNAME_PATTERN,
+} from "@/features/auth/username";
 
 const registerSchema = z
   .object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
+    name: z
+      .string()
+      .min(USERNAME_MIN_LENGTH, `Username must be at least ${USERNAME_MIN_LENGTH} characters`)
+      .max(USERNAME_MAX_LENGTH, `Username must be at most ${USERNAME_MAX_LENGTH} characters`)
+      .regex(USERNAME_PATTERN, USERNAME_FORMAT_ERROR)
+      .transform(normalizeUsername),
     email: z.email("Please enter a valid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string(),
@@ -79,6 +91,11 @@ export function RegisterForm() {
             const message = (ctx?.error?.message ?? "").toLowerCase();
             const code = ctx?.error?.code ?? "";
 
+            if (message.includes("username is taken")) {
+              toast.error("Username is taken");
+              return;
+            }
+
             if (
               code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL" ||
               message.includes("already exists")
@@ -96,6 +113,11 @@ export function RegisterForm() {
         typeof error === "object" && error && "message" in error
           ? String((error as { message?: string }).message ?? "")
           : "";
+
+      if (message.toLowerCase().includes("username is taken")) {
+        toast.error("Username is taken");
+        return;
+      }
 
       if (
         message.toLowerCase().includes("already exists") ||
@@ -157,11 +179,11 @@ export function RegisterForm() {
             name="name"
             render={({ field }) => (
               <FormItem>
-                <FormLabel className="text-white">Name</FormLabel>
+                <FormLabel className="text-white">Username</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="John Doe"
-                    autoComplete="name"
+                    placeholder="john_doe"
+                    autoComplete="username"
                     className="h-12 rounded-xl border-white/20 bg-white/8 text-white placeholder:text-white/40 focus-visible:border-white/50 focus-visible:ring-white/20"
                     {...field}
                   />

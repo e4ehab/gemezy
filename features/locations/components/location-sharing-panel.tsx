@@ -6,7 +6,6 @@ import QRCode from "qrcode";
 import {
   CheckIcon,
   CopyIcon,
-  LinkIcon,
   LoaderCircleIcon,
   MessageCircleIcon,
   QrCodeIcon,
@@ -32,7 +31,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useUpdateLocationVisibility } from "@/features/locations/hooks/use-locations";
-import { getLocationSharePath } from "@/features/locations/utils";
+import {
+  getLocationSharePath,
+  getPublicLocationSharePath,
+} from "@/features/locations/utils";
 import type { LocationVisibility } from "@/features/locations/constants";
 
 type Visibility = LocationVisibility;
@@ -40,6 +42,7 @@ type Visibility = LocationVisibility;
 type LocationSharingPanelProps = {
   slug: string;
   shareId: string;
+  shareSlug: string | null;
   name: string;
   mapsUrl: string;
   visibility: Visibility;
@@ -51,26 +54,22 @@ const visibilityInfo = {
     description: "Only you can view this location. Sharing is disabled.",
     icon: ShieldCheckIcon,
   },
-  Unlisted: {
-    label: "Unlisted",
-    description: "Anyone with the link can view it. It will not appear in Explore.",
-    icon: LinkIcon,
+  FRIENDS_ONLY: {
+    label: "Friends only",
+    description: "Only you and your accepted friends can view this location.",
+    icon: UsersIcon,
   },
   PUBLIC: {
     label: "Public",
     description: "Anyone can view it, and it may appear in Explore.",
     icon: Globe2Icon,
   },
-  SHARED: {
-    label: "Shared",
-    description: "Specific-person sharing is not available yet.",
-    icon: UsersIcon,
-  },
-} satisfies Record<Visibility, { label: string; description: string; icon: typeof LinkIcon }>;
+} satisfies Record<Visibility, { label: string; description: string; icon: typeof UsersIcon }>;
 
 export function LocationSharingPanel({
   slug,
   shareId,
+  shareSlug,
   name,
   mapsUrl,
   visibility,
@@ -79,8 +78,10 @@ export function LocationSharingPanel({
   const updateVisibility = useUpdateLocationVisibility();
   const [qrDataUrl, setQrDataUrl] = useState<string>();
   const [isQrOpen, setIsQrOpen] = useState(false);
-  const sharePath = getLocationSharePath(shareId);
-  const isShareable = visibility === "PUBLIC" || visibility === "Unlisted";
+  const sharePath = shareSlug
+    ? getPublicLocationSharePath(shareSlug)
+    : getLocationSharePath(shareId);
+  const isShareable = visibility !== "PRIVATE";
   const CurrentIcon = visibilityInfo[visibility].icon;
 
   useEffect(() => {
@@ -124,14 +125,16 @@ export function LocationSharingPanel({
   };
 
   const handleVisibilityChange = async (value: string | null) => {
-    if (value !== "PRIVATE" && value !== "PUBLIC" && value !== "Unlisted") return;
+    if (value !== "PRIVATE" && value !== "PUBLIC" && value !== "FRIENDS_ONLY") return;
     try {
       await updateVisibility.mutateAsync({ slug, visibility: value });
       router.refresh();
       toast.success(
         value === "PRIVATE"
           ? "Location is now private"
-          : `Location is now ${value === "PUBLIC" ? "public" : "unlisted"}`,
+          : value === "PUBLIC"
+            ? "Location is now public"
+            : "Location is now visible to friends only",
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update sharing settings");
@@ -148,8 +151,7 @@ export function LocationSharingPanel({
           <div className="space-y-1">
             <h2 className="font-semibold">Sharing</h2>
             <p className="max-w-lg text-sm text-muted-foreground">
-              {visibilityInfo[visibility].description} Shared pages show only the name, photos,
-              and Maps link.
+              {visibilityInfo[visibility].description} 
             </p>
           </div>
         </div>
@@ -163,11 +165,8 @@ export function LocationSharingPanel({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="PRIVATE">Private</SelectItem>
-            <SelectItem value="Unlisted">Unlisted</SelectItem>
+            <SelectItem value="FRIENDS_ONLY">Friends only</SelectItem>
             <SelectItem value="PUBLIC">Public</SelectItem>
-            <SelectItem value="SHARED" disabled>
-              Shared (not available)
-            </SelectItem>
           </SelectContent>
         </Select>
       </div>

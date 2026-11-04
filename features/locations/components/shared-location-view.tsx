@@ -1,14 +1,42 @@
+
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRightIcon, CopyIcon, MapPinIcon, MessageCircleIcon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ArrowUpRightIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  ExpandIcon,
+  MapPinIcon,
+  MessageCircleIcon,
+  ShieldCheckIcon,
+  ImagesIcon,
+  CheckIcon,
+} from "lucide-react";
+
 import { toast } from "@/components/ui/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getGoogleMapsUrl, getLocationSharePath } from "@/features/locations/utils";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+import {
+  getGoogleMapsUrl,
+  getLocationSharePath,
+  getPublicLocationSharePath,
+} from "@/features/locations/utils";
 
 type SharedLocation = {
   shareId: string;
+  shareSlug: string | null;
   name: string;
   images: string[];
   mapsUrl: string;
@@ -16,131 +44,373 @@ type SharedLocation = {
   imagePositionY: number;
 };
 
-export function SharedLocationView({ location }: { location: SharedLocation }) {
+export function SharedLocationView({
+  location,
+}: {
+  location: SharedLocation;
+}) {
   const images = location.images ?? [];
+
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const activeImage = images[activeImageIndex];
+  const hasImages = images.length > 0;
+  const hasMultipleImages = images.length > 1;
+
+  const showPreviousImage = useCallback(() => {
+    if (!hasMultipleImages) return;
+
+    setActiveImageIndex((index) =>
+      (index - 1 + images.length) % images.length
+    );
+  }, [hasMultipleImages, images.length]);
+
+  const showNextImage = useCallback(() => {
+    if (!hasMultipleImages) return;
+
+    setActiveImageIndex((index) =>
+      (index + 1) % images.length
+    );
+  }, [hasMultipleImages, images.length]);
+
+  // Keyboard navigation for the full-screen viewer.
+  useEffect(() => {
+    if (!isImageViewerOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        showPreviousImage();
+      }
+
+      if (event.key === "ArrowRight") {
+        showNextImage();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isImageViewerOpen, showNextImage, showPreviousImage]);
+
+  const getShareUrl = () => {
+    return new URL(
+      location.shareSlug
+        ? getPublicLocationSharePath(location.shareSlug)
+        : getLocationSharePath(location.shareId),
+      window.location.origin
+    ).toString();
+  };
 
   const copyLink = async () => {
     try {
-      await navigator.clipboard.writeText(
-        new URL(getLocationSharePath(location.shareId), window.location.origin).toString(),
-      );
+      await navigator.clipboard.writeText(getShareUrl());
+
+      setIsCopied(true);
       toast.success("Share link copied");
+
+      window.setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
     } catch {
       toast.error("Could not copy the share link");
     }
   };
 
   const shareOnWhatsApp = () => {
-    const shareUrl = new URL(
-      getLocationSharePath(location.shareId),
-      window.location.origin,
-    ).toString();
+    const shareUrl = getShareUrl();
     const mapsUrl = getGoogleMapsUrl(location.mapsUrl);
-    const message = `Check out ${location.name}\n${shareUrl}\nOpen in Google Maps: ${mapsUrl}`;
+
+    const message = [
+      `Check out ${location.name}`,
+      shareUrl,
+      `Open in Google Maps: ${mapsUrl}`,
+    ].join("\n");
+
     window.open(
       `https://wa.me/?text=${encodeURIComponent(message)}`,
       "_blank",
-      "noopener,noreferrer",
+      "noopener,noreferrer"
     );
   };
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-4xl space-y-5 px-3 py-6 sm:space-y-6 sm:px-6 sm:py-10">
-      <Card className="overflow-hidden rounded-3xl border-border bg-card text-card-foreground shadow-xl shadow-black/10">
-        <div className="relative flex aspect-[4/3] max-h-[32rem] w-full items-center justify-center overflow-hidden bg-linear-to-br from-primary/15 via-accent/25 to-muted sm:aspect-[2/1]">
-          {images[0] ? (
-            <>
-              <Image
-                src={images[0]}
-                alt=""
-                aria-hidden="true"
-                fill
-                unoptimized
-                priority
-                sizes="(max-width: 768px) 100vw, 896px"
-                className="scale-110 object-cover opacity-60 blur-2xl"
-                style={{
-                  objectPosition: `${location.imagePositionX}% ${location.imagePositionY}%`,
-                }}
-              />
-              <div className="absolute inset-0 bg-black/20" />
-              <Image
-                src={images[0]}
-                alt={location.name}
-                fill
-                unoptimized
-                priority
-                sizes="(max-width: 768px) 100vw, 896px"
-                className="z-10 object-contain p-2 drop-shadow-2xl sm:p-4"
-              />
-            </>
+    <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+
+      {/* Header */}
+      <header className="mb-7">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <MapPinIcon className="size-5" />
+          </div>
+          <h1 className="min-w-0 wrap-break-word text-xl font-semibold tracking-tight sm:text-2xl">
+            {location.name}
+          </h1>
+        </div>
+      </header>
+
+      {/* Photo Gallery */}
+      <section
+        aria-label="Location photos"
+        className="mb-7 space-y-3"
+      >
+        <div
+          className={`grid items-center gap-2 sm:gap-4 ${
+            hasMultipleImages
+              ? "grid-cols-[auto_minmax(0,1fr)_auto]"
+              : "grid-cols-1"
+          }`}
+        >
+          {hasMultipleImages && (
+            <button
+              type="button"
+              onClick={showPreviousImage}
+              aria-label="Previous photo"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:size-11"
+            >
+              <ChevronLeftIcon className="size-5" />
+            </button>
+          )}
+
+          {activeImage ? (
+            <div className="flex min-w-0 justify-center">
+              <div className="relative w-fit max-w-full overflow-hidden rounded-2xl border border-border shadow-lg shadow-black/10">
+                <button
+                  type="button"
+                  onClick={() => setIsImageViewerOpen(true)}
+                  aria-label={`View photo ${activeImageIndex + 1} full size`}
+                  className="group relative block max-w-full cursor-zoom-in focus-visible:outline-2 focus-visible:outline-primary"
+                >
+                  <Image
+                    src={activeImage}
+                    alt={`${location.name} photo ${activeImageIndex + 1}`}
+                    width={1600}
+                    height={1200}
+                    unoptimized
+                    priority={activeImageIndex === 0}
+                    sizes="(max-width: 768px) 100vw, 960px"
+                    className="block h-auto max-h-[min(68dvh,48rem)] w-auto max-w-full"
+                  />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsImageViewerOpen(true)}
+                  aria-label="Expand image"
+                  className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur-md transition hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                >
+                  <ExpandIcon className="size-4" />
+                </button>
+              </div>
+            </div>
           ) : (
-            <div className="flex size-20 items-center justify-center rounded-3xl border border-primary/25 bg-card/90 text-primary shadow-lg shadow-primary/10">
-              <MapPinIcon className="size-10" />
+            <div className="flex min-h-48 min-w-0 flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-muted-foreground">
+              <div className="flex size-16 items-center justify-center rounded-2xl border border-border bg-muted shadow-sm">
+                <MapPinIcon className="size-8 text-primary" />
+              </div>
+              <p className="text-sm font-medium">No photos available</p>
             </div>
           )}
-        </div>
-        <CardHeader className="gap-3 px-4 pt-5 sm:px-8 sm:pt-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-            Shared location
-          </p>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-4xl">{location.name}</h1>
-        </CardHeader>
-        <CardContent className="space-y-5 px-4 pb-5 sm:px-8 sm:pb-7">
-          <p className="text-sm text-muted-foreground">
-            Shared with you on Gemezy. Personal notes, tags, and exact coordinates are kept private.
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:gap-3">
-            <a
-              className={`${buttonVariants()} min-h-11 w-full sm:w-auto`}
-              href={getGoogleMapsUrl(location.mapsUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
+
+          {hasMultipleImages && (
+            <button
+              type="button"
+              onClick={showNextImage}
+              aria-label="Next photo"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-sm transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary sm:size-11"
             >
-              Open in Google Maps
-              <ArrowUpRightIcon />
-            </a>
-            <Button type="button" variant="outline" className="min-h-11 w-full sm:w-auto" onClick={copyLink}>
-              <CopyIcon />
-              Copy link
-            </Button>
+              <ChevronRightIcon className="size-5" />
+            </button>
+          )}
+        </div>
+
+        {hasImages && (
+          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+            <ImagesIcon className="size-3.5" />
+            Photo {activeImageIndex + 1} of {images.length}
+          </div>
+        )}
+
+        {/* Thumbnail Gallery */}
+        {hasMultipleImages && (
+          <div className="flex gap-2 overflow-x-auto px-0.5 py-1 scrollbar-thin">
+            {images.map((imageUrl, index) => (
+              <button
+                key={`${imageUrl}-${index}`}
+                type="button"
+                onClick={() => setActiveImageIndex(index)}
+                aria-label={`Show photo ${index + 1}`}
+                aria-pressed={activeImageIndex === index}
+                className={`relative size-17 shrink-0 overflow-hidden rounded-xl border-2 bg-muted transition-all duration-200 sm:size-20 ${
+                  activeImageIndex === index
+                    ? "border-primary opacity-100 ring-2 ring-primary/10"
+                    : "border-transparent opacity-60 hover:opacity-100"
+                }`}
+              >
+                <Image
+                  src={imageUrl}
+                  alt=""
+                  aria-hidden="true"
+                  fill
+                  unoptimized
+                  sizes="80px"
+                  className="object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Location Details */}
+      <Card className="overflow-hidden rounded-3xl border-border bg-card shadow-lg shadow-black/5">
+        <CardContent className="space-y-6 p-5 sm:p-7 lg:p-8">
+
+          {/* Title */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-primary">
+                Shared location
+              </span>
+            </div>
+
+            <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
+              Someone shared this location with you on Gemezy.
+              Open it in Google Maps to explore and navigate there.
+            </p>
+          </div>
+
+          {/* Privacy Information */}
+          <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/40 p-4">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <ShieldCheckIcon className="size-5" />
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">
+                Your privacy is respected
+              </p>
+
+              <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                Personal notes, tags, and exact coordinates are kept private.
+                Only the information shared by the owner is visible here.
+              </p>
+            </div>
+          </div>
+
+          {/* Primary Action */}
+          <a
+            href={getGoogleMapsUrl(location.mapsUrl)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`${buttonVariants({ size: "lg" })} flex min-h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold shadow-md shadow-primary/10`}
+          >
+            <MapPinIcon className="size-5" />
+            Open in Google Maps
+            <ArrowUpRightIcon className="ml-auto size-4" />
+          </a>
+
+          {/* Secondary Actions */}
+          <div className="grid grid-cols-2 gap-3">
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 w-full border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-300 sm:w-auto"
-              onClick={shareOnWhatsApp}
+              onClick={copyLink}
+              className="h-12 rounded-xl"
             >
-              <MessageCircleIcon />
+              {isCopied ? (
+                <CheckIcon className="size-4 text-emerald-500" />
+              ) : (
+                <CopyIcon className="size-4" />
+              )}
+              {isCopied ? "Copied" : "Copy link"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={shareOnWhatsApp}
+              className="h-12 rounded-xl border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400"
+            >
+              <MessageCircleIcon className="size-4" />
               WhatsApp
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {images.length > 1 && (
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Photos
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {images.slice(1).map((imageUrl, index) => (
-              <div
-                key={`${imageUrl}-${index}`}
-                className="relative h-56 overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-black/10 sm:h-72"
-              >
+      {/* Footer */}
+      <footer className="mt-7 pb-4 text-center">
+        <p className="text-xs text-muted-foreground">
+          Shared with you through{" "}
+          <span className="font-semibold text-foreground">
+            Gemezy
+          </span>
+        </p>
+      </footer>
+
+      {/* Full Screen Image Viewer */}
+      <Dialog
+        open={isImageViewerOpen}
+        onOpenChange={setIsImageViewerOpen}
+      >
+        <DialogContent className="flex h-[min(94dvh,900px)] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-3 overflow-hidden rounded-2xl border-white/10 bg-black/95 p-3 text-white sm:w-[calc(100vw-3rem)] sm:p-5">
+
+          <DialogTitle className="sr-only">
+            {location.name} photo {activeImageIndex + 1} of {images.length}
+          </DialogTitle>
+
+          {activeImage && (
+            <>
+              <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl">
                 <Image
-                  src={imageUrl}
-                  alt={`${location.name} photo ${index + 2}`}
+                  src={activeImage}
+                  alt={`${location.name} photo ${activeImageIndex + 1}`}
                   fill
                   unoptimized
-                  sizes="(max-width: 640px) 100vw, 50vw"
-                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 1152px"
+                  className="object-contain"
                 />
+
+                {hasMultipleImages && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={showPreviousImage}
+                      aria-label="Previous photo"
+                      className="absolute left-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition hover:bg-black/80 sm:left-4"
+                    >
+                      <ChevronLeftIcon className="size-5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={showNextImage}
+                      aria-label="Next photo"
+                      className="absolute right-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition hover:bg-black/80 sm:right-4"
+                    >
+                      <ChevronRightIcon className="size-5" />
+                    </button>
+                  </>
+                )}
               </div>
-            ))}
-          </div>
-        </section>
-      )}
+
+              <div className="flex items-center justify-between gap-3 px-1">
+                <p className="truncate text-sm font-medium text-white/80">
+                  {location.name}
+                </p>
+
+                <span className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/70">
+                  {activeImageIndex + 1} / {images.length}
+                </span>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

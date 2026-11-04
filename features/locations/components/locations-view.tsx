@@ -42,7 +42,7 @@ export function LocationsView() {
   );
 
   return (
-    <div className="scrollbar-hidden h-full min-h-screen w-full overflow-y-auto">
+    <div className="scrollbar-hidden h-auto min-h-screen w-full overflow-y-visible sm:h-full sm:overflow-y-auto">
       <div className="w-full px-4 py-7 sm:px-6 sm:py-8 lg:px-10">
         <div className="mx-auto w-full max-w-7xl">
           <Locations locations={data} searchQuery={normalizedQuery} />

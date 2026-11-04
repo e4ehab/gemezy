@@ -43,7 +43,13 @@ Keep the API secret server-side and never prefix it with NEXT_PUBLIC_.
 
 Location sharing
 ----------------
-Locations are private by default. Change an individual location to **Unlisted** to share it by a private link, or **Public** to include it in Explore. Public share pages expose only the location name, photos, and Google Maps link; notes, tags, and exact coordinates remain private. Unlisted pages are excluded from search indexing. Share links can be copied, sent through WhatsApp, or displayed as a locally generated QR code.
+Locations can be **Private**, **Friends only**, or **Public**. Any signed-in user can view public locations; accepted friends can also view friends-only locations. Private locations remain visible only to their owner. Shared pages expose only the location name, photos, and Google Maps link; notes, tags, and exact coordinates remain private. Public share links can be copied, sent through WhatsApp, or displayed as a locally generated QR code.
+
+Friends and privacy controls
+----------------------------
+Friend invitations use the public `GEM@########` ID. Searching an ID lets you view that user's public locations or send a friend request. Accepted friends can also see friends-only locations. Pending invitations can be cancelled, and users can be blocked or reported from the Friends page. Manage blocked users and unblock them later from **More → Blocked users**.
+
+Run `npm test` to execute the friend request and privacy policy tests. The additive Prisma migration `20261011010000_add_friend_safety_controls` creates the block and report tables; after reviewing the target database and migration history, apply pending migrations with `npx prisma migrate deploy`. Do not use `prisma migrate reset` on a database containing data.
 
 
 TODOS
@@ -53,8 +59,14 @@ TODOS
 - enhance the searching methodology
 
 - add notifaction center to the navbar and red dot when new netofification is here
-imagine your friend added a new location to thier list , it will pop up
+imagine your friend added a new location to thier list , it will pop up ✅
 
-- add the functionality of sending the location to my friends
+- add the functionality of sending the location to my friends ✅
 
-- add friend page to the pages
+- add friend page to the pages ✅
+
+- improve the prefetching for faster render
+
+- add billing portal (stripe)
+
+- add payment plan to put your location in teh explore top page and increase the views 

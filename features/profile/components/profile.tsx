@@ -18,6 +18,12 @@ import {
   UserRoundIcon,
 } from 'lucide-react';
 import { toast } from '@/components/ui/toast';
+import {
+  normalizeUsername,
+  USERNAME_MAX_LENGTH,
+  USERNAME_MIN_LENGTH,
+  USERNAME_PATTERN,
+} from '@/features/auth/username';
 
 export function Profile() {
   const { data: profile } = useSuspenseProfile();
@@ -44,18 +50,27 @@ export function Profile() {
 
   const saveName = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const updatedName = name.trim();
+    const updatedName = normalizeUsername(name);
 
-    if (updatedName.length < 2 || updatedName === profile.name) return;
+    if (
+      updatedName.length < 2 ||
+      !USERNAME_PATTERN.test(updatedName) ||
+      updatedName === profile.name
+    ) return;
 
     updateName.mutate(
       { name: updatedName },
       {
         onSuccess: ({ name: savedName }) => {
           setName(savedName);
-          toast.success('Name updated');
+          toast.success('Username updated');
         },
-        onError: () => toast.error('Could not update your name'),
+        onError: (error) =>
+          toast.error(
+            error.message.toLowerCase().includes('username is taken')
+              ? 'Username is taken'
+              : 'Could not update your username',
+          ),
       },
     );
   };
@@ -91,28 +106,36 @@ export function Profile() {
             <UserRoundIcon className="mb-1 hidden size-5 text-muted-foreground sm:block" />
             <div className="w-full min-w-0 flex-1 space-y-1.5 sm:min-w-48">
               <label htmlFor="profile-name" className="text-sm text-muted-foreground">
-                Display name
+                Username
               </label>
               <input
                 id="profile-name"
                 name="name"
                 type="text"
-                autoComplete="name"
-                maxLength={100}
+                autoComplete="username"
+                maxLength={USERNAME_MAX_LENGTH}
                 required
-                minLength={2}
+                minLength={USERNAME_MIN_LENGTH}
                 value={name}
                 onChange={(event) => setName(event.currentTarget.value)}
                 disabled={updateName.isPending}
                 className="min-h-11 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 sm:min-h-9"
               />
+              <p className="text-xs text-muted-foreground">
+                Use letters, numbers, periods, or underscores. No spaces.
+              </p>
             </div>
             <Button
               type="submit"
               className="min-h-11 w-full sm:w-auto"
-              disabled={updateName.isPending || name.trim().length < 2 || name.trim() === profile.name}
+              disabled={
+                updateName.isPending ||
+                name.length < USERNAME_MIN_LENGTH ||
+                !USERNAME_PATTERN.test(name) ||
+                normalizeUsername(name) === profile.name
+              }
             >
-              {updateName.isPending ? 'Saving...' : 'Save name'}
+            {updateName.isPending ? 'Saving...' : 'Save username'}
             </Button>
           </form>
           <div className="flex flex-wrap items-center gap-3 p-4">

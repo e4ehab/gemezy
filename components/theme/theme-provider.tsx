@@ -15,7 +15,7 @@ export function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
+      defaultTheme="graphite"
       disableTransitionOnChange
       enableSystem
       themes={themes.map(({ id }) => id)}

@@ -23,7 +23,10 @@ import {
   useUpdateLocation,
 } from "@/features/locations/hooks/use-locations";
 import { uploadLocationImages } from "@/features/locations/lib/cloudinary-upload";
-import { isGoogleMapsShareUrl } from "@/features/locations/utils";
+import {
+  isGoogleMapsShareUrl,
+  normalizeLocationName,
+} from "@/features/locations/utils";
 import { cn } from "@/lib/utils";
 
 export function EditLocationForm({ slug }: { slug: string }) {
@@ -39,6 +42,7 @@ export function EditLocationForm({ slug }: { slug: string }) {
       : null,
   );
   const [name, setName] = useState(location.name);
+  const [locationName, setLocationName] = useState(location.locationName);
   const [description, setDescription] = useState(location.description ?? "");
   const [tagsInput, setTagsInput] = useState(location.tags.join(", "));
   const [mapsShareUrl, setMapsShareUrl] = useState(
@@ -104,6 +108,7 @@ export function EditLocationForm({ slug }: { slug: string }) {
       const common = {
         slug,
         name: name.trim(),
+        locationName,
         description: description.trim() || undefined,
         tags,
         images: orderedImageUrls,
@@ -150,6 +155,8 @@ export function EditLocationForm({ slug }: { slug: string }) {
       <LocationDetailsFields
         name={name}
         onNameChange={setName}
+        locationName={locationName}
+        onLocationNameChange={(value) => setLocationName(normalizeLocationName(value))}
         description={description}
         onDescriptionChange={setDescription}
         tagsInput={tagsInput}

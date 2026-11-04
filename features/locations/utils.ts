@@ -1,20 +1,35 @@
 type LocationSlugInput = {
+  locationName: string;
+  publicId: string;
+};
+
+type LegacyLocationSlugInput = {
   name: string;
   publicId: string;
 };
 
-export function slugifyLocationName(name: string) {
-  const slug = name
+export function normalizeLocationName(name: string) {
+  return name
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
+}
 
-  return slug || 'location';
+export function slugifyLocationName(name: string) {
+  return normalizeLocationName(name) || 'location';
 }
 
 export function getLocationRouteSlugs<T extends LocationSlugInput>(locations: T[]) {
+  return new Map(
+    locations.map((location) => [location.publicId, location.locationName] as const),
+  );
+}
+
+export function getLegacyLocationRouteSlugs<T extends LegacyLocationSlugInput>(
+  locations: T[],
+) {
   const baseSlugCounts = new Map<string, number>();
   for (const location of locations) {
     const baseSlug = slugifyLocationName(location.name);
@@ -33,6 +48,52 @@ export function getLocationRouteSlugs<T extends LocationSlugInput>(locations: T[
       ] as const;
     }),
   );
+}
+
+export function getLocationPublicShareSlugs(
+  locations: Array<{ locationName: string; shareId: string }>,
+) {
+  return new Map(
+    locations.map((location) => [location.shareId, location.locationName] as const),
+  );
+}
+
+export function getLegacyLocationPublicShareSlugs(
+  locations: Array<{ name: string; shareId: string }>,
+) {
+  const baseSlugCounts = new Map<string, number>();
+  const shortIdCounts = new Map<string, number>();
+
+  for (const location of locations) {
+    const baseSlug = slugifyLocationName(location.name);
+    const shortId = location.shareId.slice(0, 8);
+    baseSlugCounts.set(baseSlug, (baseSlugCounts.get(baseSlug) ?? 0) + 1);
+    shortIdCounts.set(
+      `${baseSlug}:${shortId}`,
+      (shortIdCounts.get(`${baseSlug}:${shortId}`) ?? 0) + 1,
+    );
+  }
+
+  return new Map(
+    locations.map((location) => {
+      const baseSlug = slugifyLocationName(location.name);
+      if ((baseSlugCounts.get(baseSlug) ?? 0) < 2) {
+        return [location.shareId, baseSlug] as const;
+      }
+
+      const shortId = location.shareId.slice(0, 8);
+      const suffix =
+        (shortIdCounts.get(`${baseSlug}:${shortId}`) ?? 0) > 1
+          ? location.shareId
+          : shortId;
+
+      return [location.shareId, `${baseSlug}-${suffix}`] as const;
+    }),
+  );
+}
+
+export function getPublicLocationSharePath(slug: string) {
+  return `/share/locations/${encodeURIComponent(slug)}`;
 }
 
 export function isGoogleMapsShareUrl(value: string) {

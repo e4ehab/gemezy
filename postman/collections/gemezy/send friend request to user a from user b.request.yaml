@@ -1,0 +1,19 @@
+$kind: http-request
+order: 4000
+method: POST
+url: 'http://localhost:3000/api/trpc/friends.sendRequest'
+queryParams:
+  - key: batch
+    value: '1'
+  - key: input
+    value: '{"0":{"json":null,"meta":{"values":["undefined"],"v":1}}}'
+body:
+  type: json
+  content: |-
+    {
+      "0": {
+        "json": {
+          "friendId": "GEM@91967173"
+        }
+      }
+    }

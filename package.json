@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsx --test features/friends/server/policies.test.ts features/locations/utils.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

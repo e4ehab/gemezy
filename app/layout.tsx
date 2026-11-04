@@ -5,6 +5,7 @@ import "./globals.css";
 import { TRPCReactProvider } from "../trpc/client";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/toast";
+import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 // Main UI font
@@ -51,6 +52,7 @@ export default function RootLayout({
                 {children}
               </main>
               <Toaster />
+              <SonnerToaster position="bottom-right" richColors />
             </ThemeProvider>
           </NuqsAdapter>
         </body>

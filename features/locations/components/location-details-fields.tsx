@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 type LocationDetailsFieldsProps = {
   name: string;
   onNameChange: (value: string) => void;
+  locationName: string;
+  onLocationNameChange: (value: string) => void;
   description: string;
   onDescriptionChange: (value: string) => void;
   tagsInput: string;
@@ -18,6 +20,8 @@ type LocationDetailsFieldsProps = {
 export function LocationDetailsFields({
   name,
   onNameChange,
+  locationName,
+  onLocationNameChange,
   description,
   onDescriptionChange,
   tagsInput,
@@ -36,20 +40,41 @@ export function LocationDetailsFields({
         </p>
       </div>
       <div className="space-y-2">
-        <label htmlFor="location-name" className="text-sm font-medium">
-          Location name <span className="text-destructive">*</span>
+        <label htmlFor="location-display-name" className="text-sm font-medium">
+          Public location name <span className="text-destructive">*</span>
         </label>
         <Input
-          id="location-name"
+          id="location-display-name"
           className="min-h-11"
           value={name}
           onChange={(event) => onNameChange(event.currentTarget.value)}
-          placeholder="e.g. Weekend coffee spot"
+          placeholder="e.g. Weekend Coffee Spot"
           minLength={2}
           maxLength={100}
           required
           autoFocus={!isMobile}
         />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="location-url-name" className="text-sm font-medium">
+          Unique LocationName <span className="text-destructive">*</span>
+        </label>
+        <Input
+          id="location-url-name"
+          className="min-h-11"
+          value={locationName}
+          onChange={(event) => onLocationNameChange(event.currentTarget.value)}
+          placeholder="e.g. weekend-coffee-spot"
+          minLength={1}
+          maxLength={100}
+          pattern="[a-z0-9]+(-[a-z0-9]+)*"
+          required
+          autoComplete="off"
+          aria-describedby="location-url-name-help"
+        />
+        <p id="location-url-name-help" className="text-xs leading-5 text-muted-foreground">
+          Lowercase letters, numbers, and hyphens only. This must be unique and is used in the URL.
+        </p>
       </div>
       <div className="space-y-2">
         <label htmlFor="location-description" className="text-sm font-medium">

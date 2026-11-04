@@ -1,11 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { PanelLeftIcon, PanelLeftCloseIcon, SearchIcon } from "lucide-react";
+import { PanelLeftCloseIcon, SearchIcon, PanelRightCloseIcon } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 import { DashboardCommand } from "@/components/navbar/app-command";
 import { useEffect, useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { FriendActivity } from "@/components/navbar/friend-activity";
+import { SearchHelp } from "@/components/navbar/search-help";
 
 export const DashboardNavbar = () => {
   const { toggleSidebar, state, openMobile } = useSidebar();
@@ -43,39 +45,60 @@ export const DashboardNavbar = () => {
       <nav
         className={
           isMobile
-            ? "flex items-center gap-2 border-b border-sidebar-border bg-sidebar px-3 py-3 text-sidebar-foreground"
-            : "flex items-center border-b border-sidebar-border bg-sidebar px-4 py-3 text-sidebar-foreground"
+            ? "sticky top-0 z-50 flex shrink-0 items-center gap-1 border-b border-sidebar-border bg-sidebar px-2 py-2 text-sidebar-foreground"
+            : "sticky top-0 z-50 flex shrink-0 items-center border-b border-sidebar-border bg-sidebar px-4 py-3 text-sidebar-foreground"
         }
       >
-        <Button
-          className="h-11 w-11 shrink-0 transition-colors aria-expanded:bg-accent aria-expanded:text-accent-foreground sm:h-9 sm:w-9"
-          variant="outline"
-          onClick={toggleSidebar}
-          aria-label={isSidebarExpanded ? "Close navigation" : "Open navigation"}
-          aria-expanded={isSidebarExpanded}
-          title={isSidebarExpanded ? "Close navigation" : "Open navigation"}
-        >
-          {isSidebarExpanded ? (
-            <PanelLeftCloseIcon className="h-5 w-5" />
-          ) : (
-            <PanelLeftIcon className="h-5 w-5" />
-          )}
-        </Button>
-
-        <div className="flex flex-1 justify-center">
-          {isMobile ? (
+        {isMobile ? (
+          <>
             <Button
-              className="h-11 w-full max-w-55 justify-start font-medium text-primary"
+              className="size-9 shrink-0 transition-colors aria-expanded:bg-accent aria-expanded:text-accent-foreground"
+              variant="outline"
+              onClick={toggleSidebar}
+              aria-label={isSidebarExpanded ? "Close navigation" : "Open navigation"}
+              aria-expanded={isSidebarExpanded}
+              title={isSidebarExpanded ? "Close navigation" : "Open navigation"}
+            >
+              {isSidebarExpanded ? (
+                <PanelLeftCloseIcon className="size-5" />
+              ) : (
+                <PanelRightCloseIcon className="size-5" />
+              )}
+            </Button>
+            <SearchHelp />
+            <Button
+              className="h-10 min-w-0 flex-1 justify-start gap-1.5 px-2 font-medium text-primary"
               variant="outline"
               size="sm"
               onClick={() => setCommandOpen(true)}
+              aria-label="Search friends or locations"
               aria-haspopup="dialog"
               aria-expanded={commandOpen}
             >
-              <SearchIcon className="h-4 w-4 shrink-0 text-primary" />
-              Search locations...
+              <SearchIcon className="size-4 shrink-0 text-primary" />
+              <span className="truncate">Search friends & locations</span>
             </Button>
-          ) : (
+            <FriendActivity />
+          </>
+        ) : (
+          <>
+            <Button
+              className="h-9 w-9 shrink-0 transition-colors aria-expanded:bg-accent aria-expanded:text-accent-foreground"
+              variant="outline"
+              onClick={toggleSidebar}
+              aria-label={isSidebarExpanded ? "Close navigation" : "Open navigation"}
+              aria-expanded={isSidebarExpanded}
+              title={isSidebarExpanded ? "Close navigation" : "Open navigation"}
+            >
+              {isSidebarExpanded ? (
+                <PanelLeftCloseIcon className="size-5" />
+              ) : (
+                <PanelRightCloseIcon className="size-5" />
+              )}
+            </Button>
+
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-1.5">
+              <SearchHelp />
             <Button
               className="h-9 w-170 justify-start font-normal text-muted-foreground hover:text-muted-foreground"
               variant="outline"
@@ -87,7 +110,7 @@ export const DashboardNavbar = () => {
               <div className="flex items-center gap-2 rounded-md px-2 py-1 text-sm">
                 <SearchIcon className="h-4 w-4 text-primary" />
                 <span className="font-semibold text-primary">
-                  Search locations...
+                  Search friends or locations...
                 </span>
               </div>
 
@@ -95,8 +118,10 @@ export const DashboardNavbar = () => {
                 <span className="text-xs">Ctrl/&#8984;</span>K
               </kbd>
             </Button>
-          )}
-        </div>
+            </div>
+            <FriendActivity />
+          </>
+        )}
       </nav>
     </>
   );
