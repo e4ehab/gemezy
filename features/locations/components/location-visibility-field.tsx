@@ -1,6 +1,6 @@
 "use client";
 
-import { EyeIcon, EyeOffIcon, Globe2Icon, UsersIcon } from "lucide-react";
+import { EyeOffIcon, Globe2Icon, UsersIcon } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,16 +12,14 @@ import type { LocationVisibility } from "@/features/locations/constants";
 
 const descriptions: Record<LocationVisibility, string> = {
   PRIVATE: "Only you can view this location.",
-  Unlisted: "Anyone with its unique share link can view it. It will not appear in Explore.",
+  FRIENDS_ONLY: "Only you and your accepted friends can view this location.",
   PUBLIC: "Anyone can view it, and it may appear in Explore.",
-  SHARED: "Sharing with specific accounts is not available yet.",
 };
 
 const icons = {
   PRIVATE: EyeOffIcon,
-  Unlisted: EyeIcon,
+  FRIENDS_ONLY: UsersIcon,
   PUBLIC: Globe2Icon,
-  SHARED: UsersIcon,
 };
 
 export function LocationVisibilityField({
@@ -52,8 +50,7 @@ export function LocationVisibilityField({
             if (
               nextValue === "PRIVATE" ||
               nextValue === "PUBLIC" ||
-              nextValue === "Unlisted" ||
-              nextValue === "SHARED"
+              nextValue === "FRIENDS_ONLY"
             ) {
               onChange(nextValue);
             }
@@ -65,11 +62,8 @@ export function LocationVisibilityField({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="PRIVATE">Private</SelectItem>
-            <SelectItem value="Unlisted">Unlisted</SelectItem>
+            <SelectItem value="FRIENDS_ONLY">Friends only</SelectItem>
             <SelectItem value="PUBLIC">Public</SelectItem>
-            <SelectItem value="SHARED" disabled>
-              Shared (coming soon)
-            </SelectItem>
           </SelectContent>
         </Select>
       </div>

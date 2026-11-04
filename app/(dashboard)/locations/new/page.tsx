@@ -16,10 +16,7 @@ export default async function NewLocationPage() {
           My locations
         </Link>
         <header className="space-y-2">
-          <div className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-            <MapPinIcon className="size-4" />
-            Add to your collection
-          </div>
+
           <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Save a new place</h1>
           <p className="max-w-xl text-muted-foreground">
             Add where you are or find a place on Google Maps, then give your new gem a name.

@@ -25,10 +25,51 @@ model User {
   sessions       Session[]
   accounts       Account[]
   savedLocations SavedLocation[]
+  sentFriendRequests     FriendRequest[] @relation("FriendRequestSender")
+  receivedFriendRequests FriendRequest[] @relation("FriendRequestRecipient")
+  blocksCreated          FriendBlock[]   @relation("FriendBlocker")
+  blocksReceived         FriendBlock[]   @relation("FriendBlocked")
   account_type   String?         @default("public")
 
   @@unique([email])
+  @@unique([name], map: "user_name_key")
   @@map("user")
+}
+
+model FriendRequest {
+  id          String              @id @default(cuid())
+  senderId    String
+  recipientId String
+  status      FriendRequestStatus @default(PENDING)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  respondedAt DateTime?
+  sender      User                @relation("FriendRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  recipient   User                @relation("FriendRequestRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, recipientId], map: "friend_request_sender_recipient_key")
+  @@index([recipientId, status, createdAt])
+  @@index([senderId, status, createdAt])
+  @@map("friend_request")
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model FriendBlock {
+  id        String   @id @default(cuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("FriendBlocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("FriendBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId], map: "friend_block_blocker_blocked_key")
+  @@index([blockedId])
+  @@map("friend_block")
 }
 
 model SavedLocation {
@@ -37,6 +78,7 @@ model SavedLocation {
   shareId        String             @unique(map: "saved_location_shareId_key")
   visibility     LocationVisibility @default(PRIVATE)
   name           String
+  locationName   String             @unique(map: "saved_location_locationName_key")
   description    String?
   tags           String[]           @default([])
   images         String[]           @default([])
@@ -56,10 +98,9 @@ model SavedLocation {
 }
 
 enum LocationVisibility {
-  PUBLIC // 🌎 Anyone can discover it
-  PRIVATE // 🔒 Only me 
-  SHARED // 👥 Specific people
-  Unlisted // 🔗 Anyone with the link / location Id
+  PUBLIC
+  PRIVATE
+  FRIENDS_ONLY
 }
 
 model Session {

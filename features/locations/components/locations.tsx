@@ -6,7 +6,11 @@ import { toast } from "@/components/ui/toast";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "@/trpc/routers/_app";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { getGoogleMapsUrl, getLocationSharePath } from "@/features/locations/utils";
+import {
+  getGoogleMapsUrl,
+  getLocationSharePath,
+  getPublicLocationSharePath,
+} from "@/features/locations/utils";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -39,12 +43,14 @@ export function Locations({
   };
 
   const shareLocationOnWhatsApp = (location: (typeof locations)[number]) => {
-    if (location.visibility !== "PUBLIC" && location.visibility !== "Unlisted") {
-      toast.info("Make this location public or unlisted before sharing");
+    if (location.visibility === "PRIVATE") {
+      toast.info("Make this location public or friends only before sharing");
       return;
     }
     const locationUrl = new URL(
-      getLocationSharePath(location.shareId),
+      location.shareSlug
+        ? getPublicLocationSharePath(location.shareSlug)
+        : getLocationSharePath(location.shareId),
       window.location.origin,
     ).toString();
     const mapsUrl = getGoogleMapsUrl(location.mapsUrl);
@@ -83,21 +89,21 @@ export function Locations({
   }
 
   return (
-    <div className="grid auto-rows-fr grid-cols-1 gap-4 pb-8 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 pb-6 sm:auto-rows-fr sm:grid-cols-2 sm:gap-6 sm:pb-8 lg:grid-cols-3 xl:grid-cols-4">
       {locations.map((location) => {
         const images = location.images ?? [];
 
         return (
         <article
           key={location.id}
-          className="group flex h-full flex-col overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sidebar-accent/40 hover:shadow-xl"
+          className="group flex h-auto flex-col overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sidebar-accent/40 hover:shadow-xl sm:h-full"
         >
           <Link
             href={`/locations/${encodeURIComponent(location.slug)}`}
             className="rounded-t-2xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             aria-label={`View ${location.name}`}
           >
-            <div className="relative flex aspect-16/10 w-full shrink-0 items-center justify-center overflow-hidden bg-linear-to-br from-primary/20 via-sidebar-accent/15 to-muted">
+            <div className="relative flex aspect-16/8 w-full shrink-0 items-center justify-center overflow-hidden bg-linear-to-br from-primary/20 via-sidebar-accent/15 to-muted sm:aspect-16/10">
               {images[0] ? (
                 <Image
                   src={images[0]}
@@ -139,7 +145,7 @@ export function Locations({
             </div>
           </Link>
 
-          <div className="flex grow flex-col gap-3 p-4 sm:p-5">
+          <div className="flex flex-col gap-2 p-3 sm:grow sm:gap-3 sm:p-5">
             <Link
               href={`/locations/${encodeURIComponent(location.slug)}`}
               className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -152,7 +158,7 @@ export function Locations({
               </div>
             </Link>
 
-            <p className="line-clamp-2 min-h-10 text-sm leading-5 text-sidebar-foreground/70">
+            <p className="line-clamp-2 text-sm leading-5 text-sidebar-foreground/70">
               {location.description || location.address || "A saved place, ready for your next adventure."}
             </p>
 
@@ -173,7 +179,7 @@ export function Locations({
             </div>
           </div>
 
-          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 pb-4 text-sm sm:flex-nowrap">
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 pb-3 text-sm sm:flex-nowrap sm:px-4 sm:pb-4">
             <div className="flex min-w-0 items-center gap-1">
               <span className="truncate font-mono text-xs text-sidebar-foreground/50">
                 {location.publicId}

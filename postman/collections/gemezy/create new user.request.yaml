@@ -1,0 +1,19 @@
+$kind: http-request
+order: 1000
+method: POST
+url: 'http://localhost:3000/api/auth/sign-up/email'
+body:
+  type: json
+  content: |-
+    {
+      "name": "Postman User A",
+      "email": "user.a@example.com",
+      "password": "TestPass123!"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Successful POST request", function () {
+          pm.expect(pm.response.code).to.be.oneOf([200, 201]);
+      });

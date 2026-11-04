@@ -8,6 +8,8 @@ import {
   LoaderCircleIcon,
   LogOutIcon,
   TelescopeIcon,
+  UsersRoundIcon,
+  ShieldBanIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -44,6 +46,7 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { title: "My Locations", icon: BirdhouseIcon, url: "/locations" },
   { title: "Explore", icon: TelescopeIcon, url: "/explore" },
+  { title: "Friends", icon: UsersRoundIcon, url: "/friends" },
   { title: "Add New", icon: CirclePlusIcon, url: "/locations/new" },
 ];
 
@@ -209,6 +212,15 @@ export const AppSidebar = () => {
                 sideOffset={isCollapsed ? 10 : 4}
                 className="w-56 border-border bg-popover text-popover-foreground"
               >
+                <DropdownMenuItem
+                  render={<Link href="/blocks" prefetch />}
+                  onClick={closeMobileSidebar}
+                  className="h-10 gap-3 text-base"
+                >
+                  <ShieldBanIcon className="size-5" />
+                  Blocked users
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <ThemeSwitcher />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

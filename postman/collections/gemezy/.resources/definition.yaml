@@ -1,0 +1,9 @@
+$kind: collection
+name: gemezy
+variables:
+  - key: userB_email
+    value: ''
+  - key: userB_password
+    value: ''
+  - key: userB_token
+    value: ''

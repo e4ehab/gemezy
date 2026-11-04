@@ -1,0 +1,1 @@
+export const FRIEND_PUBLIC_ID_PATTERN = /^GEM@\d{8}$/i;
