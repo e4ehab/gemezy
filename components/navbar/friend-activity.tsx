@@ -67,13 +67,20 @@ export function FriendActivity() {
     }
   };
 
-  if (!session?.user) return null;
-
   const iconButtonClass =
     "relative size-9 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
 
+  if (!session?.user) {
+    return (
+      <div
+        className="h-9 w-19 shrink-0"
+        aria-hidden="true"
+      />
+    );
+  }
+
   return (
-    <div className="flex shrink-0 items-center gap-0.5">
+    <div className="flex h-9 w-19 shrink-0 items-center justify-end gap-0.5">
       <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
         <PopoverTrigger
           render={

@@ -115,36 +115,79 @@ function locationNameTakenError() {
 
 export const locationsRouter = createTRPCRouter({
   getMany: protectedProcedure
-    .input(z.object({ search: z.string().trim().max(100).optional() }).default({}))
-    .query(async ({ ctx, input }) => {
-      const locations = await prisma.savedLocation.findMany({
-        where: { userId: ctx.session.user.id },
-        orderBy: { createdAt: 'desc' },
-      });
-      const routeSlugs = getLocationRouteSlugs(locations);
-      const publicShareSlugs = await getPublicLocationShareSlugMap();
-      const normalizedQuery = input.search?.replace(/^#/, '').trim().toLowerCase();
-
-      return locations
-        .filter((location) => {
-          if (!normalizedQuery) return true;
-          return [
-            location.name,
-            location.locationName,
-            location.publicId,
-            ...location.tags,
-          ].some((value) => value?.toLowerCase().includes(normalizedQuery));
+    .input(
+      z
+        .object({
+          page: z.number().int().min(1).default(1),
+          pageSize: z.number().int().min(1).max(100).default(100),
+          search: z.string().trim().max(100).default(""),
         })
-        .map((location) => ({
+        .default({ page: 1, pageSize: 100, search: "" }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { page, pageSize } = input;
+      const normalizedQuery = input.search.replace(/^#/, "").trim().toLowerCase();
+      const matchingTagIds = normalizedQuery
+        ? await prisma.$queryRaw<Array<{ id: string }>>`
+            SELECT "id"
+            FROM "saved_location"
+            WHERE "userId" = ${ctx.session.user.id}
+              AND EXISTS (
+                SELECT 1
+                FROM unnest("tags") AS tag(value)
+                WHERE strpos(lower(tag.value), ${normalizedQuery}) > 0
+              )
+          `
+        : [];
+      const where = {
+        userId: ctx.session.user.id,
+        ...(normalizedQuery
+          ? {
+              OR: [
+                { name: { contains: normalizedQuery, mode: "insensitive" as const } },
+                {
+                  locationName: {
+                    contains: normalizedQuery,
+                    mode: "insensitive" as const,
+                  },
+                },
+                { publicId: { contains: normalizedQuery, mode: "insensitive" as const } },
+                { id: { in: matchingTagIds.map(({ id }) => id) } },
+              ],
+            }
+          : {}),
+      };
+      const [locations, totalCount] = await Promise.all([
+        prisma.savedLocation.findMany({
+          where,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        }),
+        prisma.savedLocation.count({ where }),
+      ]);
+      const routeSlugs = getLocationRouteSlugs(locations);
+      const items = locations.map((location) => ({
           ...location,
           slug: routeSlugs.get(location.publicId)!,
           shareSlug:
             location.visibility === 'FRIENDS_ONLY'
               ? location.locationName
               : location.visibility === 'PUBLIC'
-                ? publicShareSlugs.get(location.shareId) ?? null
+                ? location.locationName
                 : null,
         }));
+      const totalPages = Math.ceil(totalCount / pageSize);
+
+      return {
+        items,
+        page,
+        pageSize,
+        totalCount,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      };
     }),
   getBySlug: protectedProcedure
     .input(z.object({ slug: z.string().min(1).max(180) }))

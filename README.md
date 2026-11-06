@@ -58,15 +58,16 @@ TODOS
 
 - enhance the searching methodology
 
-- add notifaction center to the navbar and red dot when new netofification is here
-imagine your friend added a new location to thier list , it will pop up ✅
+- add notifaction center to the navbar and red dot when new netofification is here ✅
 
 - add the functionality of sending the location to my friends ✅
 
 - add friend page to the pages ✅
 
-- improve the prefetching for faster render
+- improve the prefetching for faster render ✅
 
 - add billing portal (stripe)
 
 - add payment plan to put your location in teh explore top page and increase the views 
+
+- create explore folder and add pagination to it later
