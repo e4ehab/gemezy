@@ -22,14 +22,27 @@ import {
   PlusIcon,
 } from "lucide-react";
 
-type SavedLocation = inferRouterOutputs<AppRouter>["locations"]["getMany"][number];
+type SavedLocation =
+  inferRouterOutputs<AppRouter>["locations"]["getMany"]["items"][number];
 
 export function Locations({
   locations,
   searchQuery,
+  page,
+  totalPages,
+  hasNextPage,
+  hasPreviousPage,
+  isFetching,
+  onPageChange,
 }: {
   locations: SavedLocation[];
   searchQuery: string;
+  page: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  isFetching: boolean;
+  onPageChange: (page: number) => void;
 }) {
   const isMobile = useIsMobile();
 
@@ -89,6 +102,7 @@ export function Locations({
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 gap-4 pb-6 sm:auto-rows-fr sm:grid-cols-2 sm:gap-6 sm:pb-8 lg:grid-cols-3 xl:grid-cols-4">
       {locations.map((location) => {
         const images = location.images ?? [];
@@ -240,5 +254,32 @@ export function Locations({
         );
       })}
     </div>
+    <nav
+      aria-label="Location pages"
+      className="flex items-center justify-between gap-3 border-t border-border py-4"
+    >
+      <p className="text-sm text-muted-foreground">
+        Page {page} of {totalPages || 1}
+      </p>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!hasPreviousPage || isFetching}
+          onClick={() => onPageChange(Math.max(1, page - 1))}
+        >
+          Previous
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={!hasNextPage || isFetching}
+          onClick={() => onPageChange(page + 1)}
+        >
+          Next
+        </Button>
+      </div>
+    </nav>
+    </>
   );
 }

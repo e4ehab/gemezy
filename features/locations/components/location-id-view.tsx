@@ -7,12 +7,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangleIcon,
+  ArrowLeftIcon,
   ArrowUpRightIcon,
   CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CompassIcon,
-  ExpandIcon,
   LoaderCircleIcon,
   MapPinIcon,
   PencilIcon,
@@ -38,12 +38,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 import { getGoogleMapsUrl } from "@/features/locations/utils";
 import { cn } from "@/lib/utils";
@@ -97,9 +91,6 @@ export function LocationIdView({
   const [activeImageIndex, setActiveImageIndex] =
     useState(0);
 
-  const [isImageViewerOpen, setIsImageViewerOpen] =
-    useState(false);
-
   const images = location.images ?? [];
   const activeImage = images[activeImageIndex];
 
@@ -146,13 +137,26 @@ export function LocationIdView({
       <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8 lg:py-10">
 
         <header className="mb-6 space-y-2 sm:mb-8">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <MapPinIcon className="size-5" />
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <MapPinIcon className="size-5" />
+              </div>
+              <h1 className="min-w-0 wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+                {location.name}
+              </h1>
             </div>
-            <h1 className="min-w-0 wrap-break-word text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
-              {location.name}
-            </h1>
+            <Link
+              href="/locations"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "sm" }),
+                "shrink-0",
+              )}
+            >
+              <ArrowLeftIcon />
+              <span className="hidden sm:inline">My locations</span>
+              <span className="sm:hidden">Back</span>
+            </Link>
           </div>
 
           {location.address && (
@@ -200,39 +204,18 @@ export function LocationIdView({
                 {activeImage ? (
                   <div className="flex min-w-0 justify-center">
                     <div className="relative w-fit max-w-full overflow-hidden rounded-2xl border border-border shadow-lg shadow-black/10">
-                      <button
-                        type="button"
-                        onClick={() => setIsImageViewerOpen(true)}
-                        aria-label={`View photo ${
+                      <Image
+                        src={activeImage}
+                        alt={`${location.name} photo ${
                           activeImageIndex + 1
-                        } of ${images.length} full size`}
-                        className={cn(
-                          "group relative block max-w-full cursor-zoom-in",
-                          focusRing,
-                        )}
-                      >
-                        <Image
-                          src={activeImage}
-                          alt={`${location.name} photo ${
-                            activeImageIndex + 1
-                          }`}
-                          width={1600}
-                          height={1200}
-                          unoptimized
-                          priority={activeImageIndex === 0}
-                          sizes="(max-width: 1024px) 100vw, 900px"
-                          className="block h-auto max-h-[min(68dvh,48rem)] w-auto max-w-full"
-                        />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsImageViewerOpen(true)}
-                        aria-label="Expand photo"
-                        className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur-md transition hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                      >
-                        <ExpandIcon className="size-4" />
-                      </button>
+                        }`}
+                        width={1600}
+                        height={1200}
+                        unoptimized
+                        priority={activeImageIndex === 0}
+                        sizes="(max-width: 1024px) 100vw, 900px"
+                        className="block h-auto max-h-[min(68dvh,48rem)] w-auto max-w-full"
+                      />
                     </div>
                   </div>
                 ) : (
@@ -262,8 +245,7 @@ export function LocationIdView({
               </div>
 
               {images.length > 0 && (
-                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                  <ExpandIcon className="size-3.5" />
+                <div className="text-center text-xs text-muted-foreground">
                   Photo {activeImageIndex + 1} of {images.length}
                 </div>
               )}
@@ -501,80 +483,6 @@ export function LocationIdView({
         </div>
       </div>
 
-      {/* Full-screen image viewer */}
-      <Dialog
-        open={isImageViewerOpen}
-        onOpenChange={setIsImageViewerOpen}
-      >
-        <DialogContent
-          className={cn(
-            "flex flex-col gap-3 border-0",
-            "bg-black/95 p-3 text-white",
-            "h-[90dvh] w-[calc(100vw-1rem)]",
-            "max-w-6xl sm:w-[calc(100vw-2rem)]",
-            "sm:p-5",
-          )}
-        >
-          <DialogTitle className="sr-only">
-            {location.name} photo {activeImageIndex + 1} of{" "}
-            {images.length}
-          </DialogTitle>
-
-          {activeImage && (
-            <div className="flex min-h-0 flex-1 items-center gap-2 sm:gap-4">
-              {images.length > 1 && (
-                <button
-                  type="button"
-                  onClick={showPreviousImage}
-                  aria-label="Show previous photo"
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center",
-                    "rounded-full bg-white/10 text-white",
-                    "transition-colors hover:bg-white/20 sm:size-11",
-                    focusRing,
-                  )}
-                >
-                  <ChevronLeftIcon className="size-5" />
-                </button>
-              )}
-
-              <div className="relative min-h-0 min-w-0 flex-1">
-                <Image
-                  src={activeImage}
-                  alt={`${location.name} photo ${
-                    activeImageIndex + 1
-                  }`}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 100vw, 1152px"
-                  className="object-contain"
-                />
-              </div>
-
-              {images.length > 1 && (
-                <button
-                  type="button"
-                  onClick={showNextImage}
-                  aria-label="Show next photo"
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center",
-                    "rounded-full bg-white/10 text-white",
-                    "transition-colors hover:bg-white/20 sm:size-11",
-                    focusRing,
-                  )}
-                >
-                  <ChevronRightIcon className="size-5" />
-                </button>
-              )}
-            </div>
-          )}
-
-          <p className="text-center text-xs text-white/70 sm:text-sm">
-            {location.name} · {activeImageIndex + 1} of{" "}
-            {images.length}
-          </p>
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }

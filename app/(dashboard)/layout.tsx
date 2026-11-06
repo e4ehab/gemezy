@@ -6,13 +6,15 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 
 const Layout = ({ children }: { children: React.ReactNode; }) => {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="h-svh overflow-hidden">
       <AppSidebar />
-      <SidebarInset className="bg-accent/20">
+      <SidebarInset className="min-h-0 overflow-hidden bg-accent/20">
         <Suspense fallback={<div className="h-14 border-b border-sidebar-border bg-sidebar" aria-label="Loading navigation" />}>
           <DashboardNavbar />
         </Suspense>
-        {children}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

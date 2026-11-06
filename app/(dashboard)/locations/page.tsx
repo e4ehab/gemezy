@@ -4,16 +4,17 @@ import { LocationsView, LocationsViewError, LocationsViewLoading } from "@/featu
 import { prefetchLocations } from "@/features/locations/server/prefetch";
 import { requireAuth } from "@/lib/auth-utils";
 import { HydrateClient } from "@/trpc/server";
+import type { SearchParams } from "nuqs/server";
+import { locationsParamsLoader } from "@/features/locations/server/params-loader";
 
-type LocationsPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
-
-export default async function LocationsPage({ searchParams }: LocationsPageProps) {
+export default async function LocationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
   await requireAuth();
-  const rawSearch = (await searchParams).search;
-  const search = typeof rawSearch === "string" ? rawSearch.trim() : "";
-  prefetchLocations(search || undefined);
+  const params = await locationsParamsLoader(searchParams);
+  prefetchLocations(params);
 
   return (
     <HydrateClient>

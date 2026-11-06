@@ -11,7 +11,7 @@ import { themes } from "@/app/themes";
 import { PaletteIcon } from "lucide-react";
 import { useTheme } from "next-themes";
 
-export function ThemeSwitcher() {
+export function ThemeSwitcher({ isMobile = false }: { isMobile?: boolean }) {
   const { resolvedTheme, setTheme } = useTheme();
 
   return (
@@ -20,7 +20,9 @@ export function ThemeSwitcher() {
         <PaletteIcon className="size-5" />
         Themes
       </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent>
+      <DropdownMenuSubContent
+        positionerClassName={isMobile ? "z-[60]" : undefined}
+      >
         <DropdownMenuRadioGroup
           value={resolvedTheme ?? "light"}
           onValueChange={setTheme}

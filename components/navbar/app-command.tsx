@@ -38,7 +38,7 @@ export const DashboardCommand = ({ open, setOpen }: Props) => {
     ...trpc.friends.getMany.queryOptions(),
     enabled: open,
   });
-  const locations = locationsQuery.data ?? [];
+  const locations = locationsQuery.data?.items ?? [];
   const friends = friendsQuery.data?.friends ?? [];
   const normalizedSearch = search.trim().toLowerCase().replace(/^#/, "");
   const canonicalId = search.trim().toUpperCase();

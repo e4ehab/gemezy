@@ -207,9 +207,10 @@ export const AppSidebar = () => {
                 </span>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                side={isCollapsed ? "right" : "top"}
+                side={isMobile ? "top" : isCollapsed ? "right" : "top"}
                 align="end"
-                sideOffset={isCollapsed ? 10 : 4}
+                sideOffset={isMobile ? 8 : isCollapsed ? 10 : 4}
+                positionerClassName={isMobile ? "z-[60]" : undefined}
                 className="w-56 border-border bg-popover text-popover-foreground"
               >
                 <DropdownMenuItem
@@ -221,7 +222,7 @@ export const AppSidebar = () => {
                   Blocked users
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <ThemeSwitcher />
+                <ThemeSwitcher isMobile={isMobile} />
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleSignOut}
