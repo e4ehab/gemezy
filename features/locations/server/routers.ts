@@ -10,6 +10,7 @@ import {
 } from '@/features/locations/utils';
 import { getPublicLocationShareSlugMap } from '@/features/locations/server/share-slugs';
 import { LOCATION_VISIBILITIES } from '@/features/locations/constants';
+import { getPaidPromotionPlan } from '@/features/locations/constants/promotion-plans';
 import { z } from 'zod';
 const locationNameInput = z
   .string()
@@ -200,6 +201,9 @@ export const locationsRouter = createTRPCRouter({
       if (!location) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Location not found.' });
       }
+      const promotion = await prisma.locationPromotion.findUnique({
+        where: { locationId: location.id },
+      });
 
       const publicShareSlugs =
         location.visibility === 'PUBLIC'
@@ -208,11 +212,130 @@ export const locationsRouter = createTRPCRouter({
 
       return {
         ...location,
+        promotion,
         shareSlug:
           location.visibility === 'FRIENDS_ONLY'
             ? location.locationName
             : publicShareSlugs?.get(location.shareId) ?? null,
       };
+    }),
+  reservePromotionCheckout: protectedProcedure
+    .input(
+      z.object({
+        locationId: z.string().min(1).max(100),
+        plan: z.enum(['SINGLE_REFRESH', 'SINGLE_FEATURED', 'SINGLE_ELITE']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (!process.env.POLAR_WEBHOOK_SECRET) {
+        throw new TRPCError({
+          code: 'PRECONDITION_FAILED',
+          message: 'Location promotions are not fully configured yet.',
+        });
+      }
+
+      const location = await prisma.savedLocation.findFirst({
+        where: { id: input.locationId, userId: ctx.session.user.id },
+        select: { id: true },
+      });
+      if (!location) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Location not found.' });
+      }
+      const plan = getPaidPromotionPlan(input.plan);
+      if (!plan) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'Invalid promotion plan.',
+        });
+      }
+
+      const now = new Date();
+      const checkoutReference = randomBytes(24).toString('hex');
+      const pendingUntil = new Date(now.getTime() + 30 * 60 * 1000);
+      const existing = await prisma.locationPromotion.findUnique({
+        where: { locationId: location.id },
+      });
+
+      if (existing) {
+        if (
+          (existing.status === 'ACTIVE' &&
+            existing.expiresAt !== null &&
+            existing.expiresAt > now) ||
+          (existing.status === 'PENDING' && existing.pendingUntil > now)
+        ) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+              'This location already has a current plan or an open checkout.',
+          });
+        }
+
+        const reservation = await prisma.locationPromotion.updateMany({
+          where: {
+            id: existing.id,
+            OR: [
+              { status: 'CANCELED' },
+              { status: 'ACTIVE', expiresAt: { lte: now } },
+              { status: 'PENDING', pendingUntil: { lte: now } },
+            ],
+          },
+          data: {
+            plan: input.plan,
+            status: 'PENDING',
+            checkoutReference,
+            pendingUntil,
+            startsAt: null,
+            expiresAt: null,
+            polarOrderId: null,
+          },
+        });
+        if (reservation.count !== 1) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message:
+              'This location already has a current plan or an open checkout.',
+          });
+        }
+      } else {
+        try {
+          await prisma.locationPromotion.create({
+            data: {
+              locationId: location.id,
+              plan: input.plan,
+              checkoutReference,
+              pendingUntil,
+            },
+          });
+        } catch (error) {
+          if (isUniqueConstraintError(error)) {
+            throw new TRPCError({
+              code: 'CONFLICT',
+              message:
+                'This location already has a current plan or an open checkout.',
+            });
+          }
+          throw error;
+        }
+      }
+
+      return {
+        checkoutReference,
+        locationId: location.id,
+        planSlug: plan.slug,
+      };
+    }),
+  cancelPromotionCheckout: protectedProcedure
+    .input(z.object({ checkoutReference: z.string().min(1).max(100) }))
+    .mutation(async ({ ctx, input }) => {
+      const reservation = await prisma.locationPromotion.updateMany({
+        where: {
+          checkoutReference: input.checkoutReference,
+          status: 'PENDING',
+          location: { userId: ctx.session.user.id },
+        },
+        data: { status: 'CANCELED' },
+      });
+      return { canceled: reservation.count === 1 };
     }),
   updateVisibility: protectedProcedure
     .input(

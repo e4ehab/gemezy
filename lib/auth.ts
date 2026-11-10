@@ -2,7 +2,15 @@
 
 import { APIError, betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { checkout, polar, portal, webhooks } from "@polar-sh/better-auth";
 import prisma from "@/lib/db";
+import { polarClient } from "@/lib/polar";
+import {
+  onPromotionCheckoutCreated,
+  onPromotionCheckoutUpdated,
+  onPromotionOrderPaid,
+  onPromotionOrderUpdated,
+} from "@/features/locations/server/promotion-webhooks";
 import {
   normalizeUsername,
   USERNAME_FORMAT_ERROR,
@@ -12,8 +20,57 @@ import {
   USERNAME_PATTERN,
 } from "@/features/auth/username";
 
+const getPolarProducts = async () => {
+  const singleRefreshProductId = process.env.POLAR_SINGLE_REFRESH_PRODUCT_ID;
+  const singleFeaturedProductId = process.env.POLAR_SINGLE_FEATURED_PRODUCT_ID;
+  const singleEliteProductId = process.env.POLAR_SINGLE_ELITE_PRODUCT_ID;
+
+  if (
+    !singleRefreshProductId ||
+    !singleFeaturedProductId ||
+    !singleEliteProductId
+  ) {
+    throw new Error(
+      "Set all three single-promotion Polar product IDs before enabling checkout.",
+    );
+  }
+
+  return [
+    { productId: singleRefreshProductId, slug: "single-refresh" },
+    { productId: singleFeaturedProductId, slug: "single-featured" },
+    { productId: singleEliteProductId, slug: "single-elite" },
+  ];
+};
+
+const polarWebhookSecret = process.env.POLAR_WEBHOOK_SECRET;
+const promotionWebhooks = polarWebhookSecret
+  ? webhooks({
+      secret: polarWebhookSecret,
+      onCheckoutCreated: onPromotionCheckoutCreated,
+      onCheckoutUpdated: onPromotionCheckoutUpdated,
+      onOrderPaid: onPromotionOrderPaid,
+      onOrderUpdated: onPromotionOrderUpdated,
+    })
+  : null;
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: "postgresql" }),
+  plugins: [
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      use: [
+        checkout({
+          products: getPolarProducts,
+          successUrl: process.env.POLAR_SUCCESS_URL,
+          returnUrl: process.env.POLAR_SUCCESS_URL,
+          authenticatedUsersOnly: true,
+        }),
+        portal(),
+        ...(promotionWebhooks ? [promotionWebhooks] : []),
+      ],
+    }),
+  ],
   databaseHooks: {
     user: {
       create: {

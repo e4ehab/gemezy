@@ -110,14 +110,14 @@ export function Locations({
         return (
         <article
           key={location.id}
-          className="group flex h-auto flex-col overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-sidebar-accent/40 hover:shadow-xl sm:h-full"
+          className="group flex h-full flex-col overflow-hidden rounded-2xl border border-sidebar-border bg-sidebar shadow-sm transition-all duration-300 hover:border-sidebar-accent/40 hover:shadow-xl"
         >
           <Link
             href={`/locations/${encodeURIComponent(location.slug)}`}
             className="rounded-t-2xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
             aria-label={`View ${location.name}`}
           >
-            <div className="relative flex aspect-16/8 w-full shrink-0 items-center justify-center overflow-hidden bg-linear-to-br from-primary/20 via-sidebar-accent/15 to-muted sm:aspect-16/10">
+            <div className="relative flex h-48 w-full shrink-0 items-center justify-center overflow-hidden bg-linear-to-br from-primary/20 via-sidebar-accent/15 to-muted">
               {images[0] ? (
                 <Image
                   src={images[0]}
@@ -149,17 +149,10 @@ export function Locations({
                   </div>
                 </>
               )}
-              <div className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-background/80 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur">
-                <MapPinIcon className="size-3.5 text-primary" />
-                Saved place
-              </div>
-              <div className="absolute bottom-4 right-4 rounded-lg border border-white/40 bg-background/75 px-2.5 py-1.5 font-mono text-[10px] text-muted-foreground shadow-sm backdrop-blur">
-                {location.publicId}
-              </div>
             </div>
           </Link>
 
-          <div className="flex flex-col gap-2 p-3 sm:grow sm:gap-3 sm:p-5">
+          <div className="grow space-y-3 p-4">
             <Link
               href={`/locations/${encodeURIComponent(location.slug)}`}
               className="rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -193,7 +186,7 @@ export function Locations({
             </div>
           </div>
 
-          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-3 pb-3 text-sm sm:flex-nowrap sm:px-4 sm:pb-4">
+          <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-4 pb-4 text-sm sm:flex-nowrap">
             <div className="flex min-w-0 items-center gap-1">
               <span className="truncate font-mono text-xs text-sidebar-foreground/50">
                 {location.publicId}
@@ -243,7 +236,7 @@ export function Locations({
               </Button>
               <Link
                 href={`/locations/${encodeURIComponent(location.slug)}`}
-                className="flex min-h-11 items-center gap-1 font-medium text-sidebar-accent transition-colors duration-300 hover:text-primary md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+                className="flex min-h-11 items-center gap-1 font-medium text-sidebar-accent transition-colors duration-300 group-hover:text-cyan-700 group-focus-within:text-cyan-700 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
               >
                 View
                 <ArrowUpRightIcon className="size-4" />
