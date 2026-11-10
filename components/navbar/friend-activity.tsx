@@ -1,14 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   BellIcon,
   CheckIcon,
+  CheckCheckIcon,
   LoaderCircleIcon,
+  MegaphoneIcon,
   UserRoundPlusIcon,
   XIcon,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,8 +37,10 @@ function getInitials(name: string) {
 }
 
 export function FriendActivity() {
+  const router = useRouter();
   const { data: session } = authClient.useSession();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [requestsOpen, setRequestsOpen] = useState(false);
   const requestsQuery = useQuery({
@@ -43,8 +48,56 @@ export function FriendActivity() {
     enabled: Boolean(session?.user),
     refetchInterval: 30_000,
   });
+  const notificationsQuery = useQuery({
+    ...trpc.notifications.getMany.queryOptions(),
+    enabled: Boolean(session?.user),
+    refetchInterval: 30_000,
+  });
+  const markNotificationRead = useMutation(
+    trpc.notifications.markRead.mutationOptions({
+      onSuccess: () =>
+        queryClient.invalidateQueries(trpc.notifications.getMany.queryFilter()),
+    }),
+  );
+  const markAllNotificationsRead = useMutation(
+    trpc.notifications.markAllRead.mutationOptions({
+      onSuccess: async () => {
+        await queryClient.invalidateQueries(
+          trpc.notifications.getMany.queryFilter(),
+        );
+      },
+    }),
+  );
   const respondToRequest = useRespondToFriendRequest();
   const incomingRequests = requestsQuery.data?.incomingRequests ?? [];
+  const notifications = notificationsQuery.data ?? [];
+  const unreadCount =
+    incomingRequests.length +
+    notifications.filter((notification) => notification.readAt === null).length;
+
+  const openNotification = async (id: string, href: string) => {
+    try {
+      await markNotificationRead.mutateAsync({ id });
+      setNotificationsOpen(false);
+      router.push(href);
+    } catch (error) {
+      toast.error("Could not open notification", {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
+    }
+  };
+
+  const markAllRead = async () => {
+    try {
+      await markAllNotificationsRead.mutateAsync();
+    } catch (error) {
+      toast.error("Could not mark notifications as read", {
+        description:
+          error instanceof Error ? error.message : "Please try again.",
+      });
+    }
+  };
 
   const respond = async (
     requestId: string,
@@ -90,15 +143,15 @@ export function FriendActivity() {
               size="icon"
               className={iconButtonClass}
               aria-label={
-                incomingRequests.length
-                  ? `Pending friend requests, ${incomingRequests.length}`
-                  : "Pending friend requests"
+                unreadCount
+                  ? `Notifications, ${unreadCount} unread`
+                  : "Notifications"
               }
             />
           }
         >
           <BellIcon className="size-5" />
-          {incomingRequests.length > 0 && (
+          {unreadCount > 0 && (
             <span
               className="absolute right-2 top-2 size-2 rounded-full bg-destructive ring-2 ring-sidebar"
               aria-hidden="true"
@@ -110,19 +163,38 @@ export function FriendActivity() {
           sideOffset={8}
           className="w-[min(22rem,calc(100vw-1rem))] gap-0 overflow-hidden p-0"
         >
-          <PopoverHeader className="border-b px-4 py-3">
-            <PopoverTitle>Pending requests</PopoverTitle>
+          <PopoverHeader className="flex-row items-center justify-between border-b px-4 py-3">
+            <PopoverTitle>Notifications</PopoverTitle>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={
+                notifications.every(
+                  (notification) => notification.readAt !== null,
+                ) || markAllNotificationsRead.isPending
+              }
+              onClick={() => void markAllRead()}
+              className="h-8 px-2 text-xs"
+            >
+              {markAllNotificationsRead.isPending ? (
+                <LoaderCircleIcon className="animate-spin" />
+              ) : (
+                <CheckCheckIcon />
+              )}
+              Mark all as read
+            </Button>
           </PopoverHeader>
-          {requestsQuery.isPending ? (
+          {requestsQuery.isPending || notificationsQuery.isPending ? (
             <div className="flex items-center justify-center gap-2 px-4 py-8 text-sm text-muted-foreground">
               <LoaderCircleIcon className="size-4 animate-spin" />
               Loading notifications...
             </div>
-          ) : requestsQuery.isError ? (
+          ) : requestsQuery.isError || notificationsQuery.isError ? (
             <p className="px-4 py-6 text-sm text-destructive" role="alert">
               Could not load notifications. Please try again.
             </p>
-          ) : incomingRequests.length === 0 ? (
+          ) : incomingRequests.length === 0 && notifications.length === 0 ? (
             <p className="px-4 py-8 text-center text-sm text-muted-foreground">
               All caught up
             </p>
@@ -139,6 +211,36 @@ export function FriendActivity() {
                     sent you a friend request
                   </p>
                 </li>
+              ))}
+              {notifications.map((notification) => (
+                  <li key={notification.id}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void openNotification(notification.id, notification.href)
+                      }
+                      disabled={markNotificationRead.isPending}
+                      className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-accent disabled:opacity-60 ${
+                        notification.readAt === null ? "bg-primary/5" : ""
+                      }`}
+                    >
+                      <MegaphoneIcon className="mt-0.5 size-4 shrink-0 text-primary" />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium">
+                          {notification.title}
+                        </span>
+                        <span className="mt-0.5 block text-sm text-muted-foreground">
+                          {notification.message}
+                        </span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {new Intl.DateTimeFormat("en-US", {
+                            dateStyle: "medium",
+                            timeStyle: "short",
+                          }).format(notification.createdAt)}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
               ))}
             </ul>
           )}

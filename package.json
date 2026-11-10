@@ -7,13 +7,15 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test features/friends/server/policies.test.ts features/locations/utils.test.ts"
+    "test": "tsx --test features/friends/server/policies.test.ts features/locations/utils.test.ts features/notifications/server/services.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.3",
     "@hookform/resolvers": "^5.9.1",
+    "@polar-sh/better-auth": "^2.1.0",
+    "@polar-sh/sdk": "^1.0.2",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "^7.10.0",
     "@radix-ui/react-label": "^2.1.15",

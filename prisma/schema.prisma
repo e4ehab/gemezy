@@ -29,6 +29,7 @@ model User {
   receivedFriendRequests FriendRequest[] @relation("FriendRequestRecipient")
   blocksCreated          FriendBlock[]   @relation("FriendBlocker")
   blocksReceived         FriendBlock[]   @relation("FriendBlocked")
+  notifications          Notification[]
   account_type   String?         @default("public")
 
   @@unique([email])
@@ -92,15 +93,66 @@ model SavedLocation {
   updatedAt      DateTime           @updatedAt
   userId         String
   user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promotion      LocationPromotion?
 
   @@index([userId, createdAt])
   @@map("saved_location")
+}
+
+model LocationPromotion {
+  id                String                  @id @default(cuid())
+  locationId        String                  @unique
+  plan              LocationPromotionPlan
+  status            LocationPromotionStatus @default(PENDING)
+  checkoutReference String                  @unique
+  pendingUntil      DateTime
+  startsAt          DateTime?
+  expiresAt         DateTime?
+  polarOrderId      String?                 @unique
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  location          SavedLocation           @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@index([status, pendingUntil])
+  @@map("location_promotion")
+}
+
+model Notification {
+  id            String           @id @default(cuid())
+  userId        String
+  type          NotificationType
+  title         String
+  message       String
+  href          String
+  polarOrderId  String?          @unique
+  readAt        DateTime?
+  createdAt     DateTime         @default(now())
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notification")
 }
 
 enum LocationVisibility {
   PUBLIC
   PRIVATE
   FRIENDS_ONLY
+}
+
+enum LocationPromotionPlan {
+  SINGLE_REFRESH
+  SINGLE_FEATURED
+  SINGLE_ELITE
+}
+
+enum LocationPromotionStatus {
+  PENDING
+  ACTIVE
+  CANCELED
+}
+
+enum NotificationType {
+  PROMOTION_ACTIVATED
 }
 
 model Session {

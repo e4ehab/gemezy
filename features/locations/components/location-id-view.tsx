@@ -3,19 +3,22 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangleIcon,
   ArrowLeftIcon,
   ArrowUpRightIcon,
+  BadgeCheckIcon,
   CalendarDaysIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CompassIcon,
+  CreditCardIcon,
   LoaderCircleIcon,
   MapPinIcon,
   PencilIcon,
+  TimerIcon,
   Share2Icon,
   Trash2Icon,
 } from "lucide-react";
@@ -39,7 +42,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import { getGoogleMapsUrl } from "@/features/locations/utils";
+import {
+  cleanPromotionCheckoutReturnUrl,
+  getGoogleMapsUrl,
+} from "@/features/locations/utils";
 import { cn } from "@/lib/utils";
 
 import {
@@ -48,6 +54,12 @@ import {
 } from "@/features/locations/hooks/use-locations";
 
 import { LocationSharingPanel } from "@/features/locations/components/location-sharing-panel";
+import { PromoteLocationDialog } from "@/features/locations/components/promote-location-dialog";
+import {
+  getLocationPromotionState,
+  getPromotionPlanBySlug,
+  getPromotionPlanByValue,
+} from "@/features/locations/constants/promotion-plans";
 
 type LocationIdViewProps = {
   slug: string;
@@ -82,19 +94,121 @@ export function LocationIdView({
 }: LocationIdViewProps) {
   const router = useRouter();
 
-  const { data: location } = useSuspenseLocation(slug);
+  const { data: location, refetch } = useSuspenseLocation(slug);
   const deleteLocation = useDeleteLocation();
+  const hasHandledCheckoutReturn = useRef(false);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] =
     useState(false);
 
   const [activeImageIndex, setActiveImageIndex] =
     useState(0);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   const images = location.images ?? [];
   const activeImage = images[activeImageIndex];
 
   const mapsUrl = getGoogleMapsUrl(location.mapsUrl);
+  const promotionExpiry =
+    location.promotion?.status === "ACTIVE"
+      ? location.promotion.expiresAt
+      : location.promotion?.status === "PENDING"
+        ? location.promotion.pendingUntil
+        : null;
+
+  useEffect(() => {
+    if (!promotionExpiry) return;
+
+    const timeout = window.setTimeout(
+      () => setCurrentTime(new Date()),
+      Math.max(0, promotionExpiry.getTime() - Date.now()) + 10,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [promotionExpiry]);
+
+  const promotionState = getLocationPromotionState(
+    location.promotion,
+    currentTime,
+  );
+  const currentPromotion =
+    promotionState === "ACTIVE" ? location.promotion : null;
+  const pendingPromotion =
+    promotionState === "PENDING" ? location.promotion : null;
+  const currentPromotionPlan = currentPromotion
+    ? getPromotionPlanByValue(currentPromotion.plan)
+    : undefined;
+
+  useEffect(() => {
+    if (hasHandledCheckoutReturn.current) return;
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("promotion") !== "success") return;
+    hasHandledCheckoutReturn.current = true;
+
+    const planSlug = url.searchParams.get("plan");
+    const selectedPlan = planSlug
+      ? getPromotionPlanBySlug(planSlug)
+      : undefined;
+    const planTitle = selectedPlan?.title ?? "Your promotion";
+    cleanPromotionCheckoutReturnUrl(url);
+    window.history.replaceState(window.history.state, "", url.toString());
+
+    toast.info(
+      "Payment received",
+      `Confirming ${planTitle} for ${location.name}...`,
+    );
+
+    let attempts = 0;
+    let timeout: number | undefined;
+    let canceled = false;
+    const finish = (message?: string) => {
+      if (message) toast.info(message);
+    };
+
+    const checkPromotion = async () => {
+      try {
+        const result = await refetch();
+        if (canceled) return;
+
+        const promotion = result.data?.promotion;
+        const isActivated =
+          promotion?.status === "ACTIVE" &&
+          promotion.expiresAt !== null &&
+          promotion.expiresAt > new Date() &&
+          (!selectedPlan || promotion.plan === selectedPlan.value);
+
+        if (isActivated) {
+          toast.success(
+            `${planTitle} activated`,
+            `${location.name} is now promoted.`,
+          );
+          return;
+        }
+
+        attempts += 1;
+        if (attempts >= 30) {
+          finish(
+            `Payment was received for ${planTitle} at ${location.name}. Activation is taking longer than expected; refresh this page shortly.`,
+          );
+          return;
+        }
+
+        timeout = window.setTimeout(checkPromotion, 2000);
+      } catch {
+        if (!canceled) {
+          finish(
+            `Payment was received for ${planTitle} at ${location.name}, but activation could not be confirmed. Refresh this page shortly.`,
+          );
+        }
+      }
+    };
+
+    void checkPromotion();
+    return () => {
+      canceled = true;
+      if (timeout !== undefined) window.clearTimeout(timeout);
+    };
+  }, [location.name, refetch]);
 
   const createdAt = new Intl.DateTimeFormat("en-US", {
     dateStyle: "long",
@@ -344,6 +458,47 @@ export function LocationIdView({
           {/* Sidebar */}
           <aside className="min-w-0 space-y-5 lg:sticky lg:top-6">
 
+            <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
+              <h2 className="text-sm font-semibold">Current plan</h2>
+              <div className="flex items-start gap-3">
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  {currentPromotion ? (
+                    <BadgeCheckIcon className="size-4" />
+                  ) : pendingPromotion ? (
+                    <TimerIcon className="size-4" />
+                  ) : (
+                    <CreditCardIcon className="size-4" />
+                  )}
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <p className="font-medium">
+                    {currentPromotionPlan?.title ??
+                      (pendingPromotion
+                        ? "Checkout pending"
+                        : "Free")}
+                  </p>
+                  {currentPromotion?.expiresAt && (
+                    <p className="text-sm text-muted-foreground">
+                      Active until{" "}
+                      {new Intl.DateTimeFormat("en-US", {
+                        dateStyle: "long",
+                      }).format(currentPromotion.expiresAt)}
+                    </p>
+                  )}
+                  {pendingPromotion && (
+                    <p className="text-sm text-muted-foreground">
+                      Complete checkout to activate your plan.
+                    </p>
+                  )}
+                  {!currentPromotion && !pendingPromotion && (
+                    <p className="text-sm text-muted-foreground">
+                      No active promotion for this location.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+
             {/* Primary actions */}
             <section className="space-y-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
 
@@ -379,6 +534,12 @@ export function LocationIdView({
                 <PencilIcon className="size-4" />
                 Edit location
               </Link>
+
+              <PromoteLocationDialog
+                locationId={location.id}
+                locationSlug={slug}
+                isUnavailable={promotionState !== "FREE"}
+              />
 
               {/* Delete action */}
               <AlertDialog

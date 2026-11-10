@@ -3,7 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeftIcon, LoaderCircleIcon, SaveIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  LoaderCircleIcon,
+  SaveIcon,
+} from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { LocationDetailsFields } from "@/features/locations/components/location-details-fields";

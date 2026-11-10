@@ -41,6 +41,22 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 Keep the API secret server-side and never prefix it with NEXT_PUBLIC_.
 
+Polar billing
+-------------
+The dashboard Billing Portal action and one-time location promotion checkouts use Polar. Configure these server-side environment variables:
+
+```env
+POLAR_ACCESS_TOKEN=your_polar_access_token
+POLAR_SERVER=sandbox
+POLAR_SINGLE_REFRESH_PRODUCT_ID=your_single_refresh_product_id
+POLAR_SINGLE_FEATURED_PRODUCT_ID=your_single_featured_product_id
+POLAR_SINGLE_ELITE_PRODUCT_ID=your_single_elite_product_id
+POLAR_WEBHOOK_SECRET=your_polar_webhook_secret
+POLAR_SUCCESS_URL=http://localhost:3000/locations
+```
+
+Create these three as one-time Polar products and set `POLAR_SERVER` to `production` for live checkout. Their checkout slugs are `single-refresh`, `single-featured`, and `single-elite`. The plan selector displays EGP 30, EGP 35, and EGP 50 respectively; keep these labels in sync with the Polar product prices. Create a Polar webhook pointing to `https://your-domain/api/auth/polar/webhooks`, subscribe it to `checkout.created`, `checkout.updated`, `order.paid`, and `order.updated`, and set its signing secret as `POLAR_WEBHOOK_SECRET`. Apply the location promotion schema migration with `npx prisma migrate deploy`. Free locations do not start a checkout. A paid selection on the new-location form saves the location first and then opens Polar checkout; existing locations can start a purchase from the **Promote address** action on the location details page. A verified paid-order webhook activates the plan for 7 or 10 days. Only one active plan or pending checkout is allowed per location; another plan can be purchased after expiration or checkout cancellation. Promotion placement in Explore will be implemented separately. Keep the access token and webhook secret server-side and never prefix either with `NEXT_PUBLIC_`.
+
 Location sharing
 ----------------
 Locations can be **Private**, **Friends only**, or **Public**. Any signed-in user can view public locations; accepted friends can also view friends-only locations. Private locations remain visible only to their owner. Shared pages expose only the location name, photos, and Google Maps link; notes, tags, and exact coordinates remain private. Public share links can be copied, sent through WhatsApp, or displayed as a locally generated QR code.
@@ -66,8 +82,10 @@ TODOS
 
 - improve the prefetching for faster render ✅
 
-- add billing portal (stripe)
+- add billing portal (Polar) ✅
 
 - add payment plan to put your location in teh explore top page and increase the views 
 
 - create explore folder and add pagination to it later
+
+- make the private pages has it's own layout and make special button to show them

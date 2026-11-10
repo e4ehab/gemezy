@@ -17,6 +17,19 @@ export function normalizeLocationName(name: string) {
     .replace(/^-|-$/g, '');
 }
 
+export function cleanPromotionCheckoutReturnUrl(url: URL) {
+  for (const parameter of [
+    "promotion",
+    "plan",
+    "customer_session_token",
+    "checkout_id",
+    "reference_id",
+  ]) {
+    url.searchParams.delete(parameter);
+  }
+  return url;
+}
+
 export function slugifyLocationName(name: string) {
   return normalizeLocationName(name) || 'location';
 }

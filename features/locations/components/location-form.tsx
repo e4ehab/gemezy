@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeftIcon, LoaderCircleIcon, SparklesIcon } from "lucide-react";
+import {
+  ArrowLeftIcon,
+  LoaderCircleIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { toast } from "@/components/ui/toast";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -18,16 +22,22 @@ import {
 } from "@/features/locations/components/location-images-field";
 import { LocationVisibilityField } from "@/features/locations/components/location-visibility-field";
 import type { LocationVisibility } from "@/features/locations/constants";
-import { useCreateLocation } from "@/features/locations/hooks/use-locations";
+import {
+  useCreateLocation,
+  usePurchaseLocationPromotion,
+} from "@/features/locations/hooks/use-locations";
 import { uploadLocationImages } from "@/features/locations/lib/cloudinary-upload";
 import {
   isGoogleMapsShareUrl,
   normalizeLocationName,
 } from "@/features/locations/utils";
+import { PromotionPlanSelector } from "@/features/locations/components/promotion-plan-selector";
+import type { PromotionPlan } from "@/features/locations/constants/promotion-plans";
 
 export function LocationForm() {
   const router = useRouter();
   const createLocation = useCreateLocation();
+  const purchaseLocationPromotion = usePurchaseLocationPromotion();
   const [source, setSource] = useState<LocationSource>("CURRENT");
   const [name, setName] = useState("");
   const [locationName, setLocationName] = useState("");
@@ -40,6 +50,8 @@ export function LocationForm() {
   const [coordinates, setCoordinates] = useState<Coordinates | null>(null);
   const [visibility, setVisibility] = useState<LocationVisibility>("PRIVATE");
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [promotionPlan, setPromotionPlan] = useState<PromotionPlan>("FREE");
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
 
   const tags = [
     ...new Set(
@@ -93,28 +105,48 @@ export function LocationForm() {
       imagePositionY: imagePosition.y,
       visibility,
     };
-    const callbacks = {
-      onSuccess: () => {
-        toast.success("Location saved to your collection");
-        router.push("/locations");
-      },
-      onError: (error: { message: string }) =>
-        toast.error(error.message || "Could not save this location"),
-    };
+    const locationInput =
+      source === "CURRENT" && coordinates
+        ? { ...common, source, ...coordinates }
+        : source === "MAPS"
+          ? { ...common, source, mapsUrl: mapsShareUrl.trim() }
+          : null;
 
-    if (source === "CURRENT") {
-      if (!coordinates) {
-        toast.error("Find your current location before saving");
-        return;
-      }
-      createLocation.mutate({ ...common, source, ...coordinates }, callbacks);
+    if (!locationInput) {
+      toast.error("Find your current location before saving");
       return;
     }
 
-    createLocation.mutate(
-      { ...common, source, mapsUrl: mapsShareUrl.trim() },
-      callbacks,
-    );
+    try {
+      const location = await createLocation.mutateAsync(locationInput);
+      if (promotionPlan === "FREE") {
+        toast.success("Location saved to your collection");
+        router.push("/locations");
+        return;
+      }
+
+      setIsStartingCheckout(true);
+      try {
+        await purchaseLocationPromotion.purchase({
+          locationId: location.id,
+          locationSlug: location.locationName,
+          plan: promotionPlan,
+        });
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? `Location saved as Free. ${error.message}`
+            : "Location saved as Free, but checkout could not start. You can try again later.",
+        );
+        router.push("/locations");
+      } finally {
+        setIsStartingCheckout(false);
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not save this location",
+      );
+    }
   };
 
   return (
@@ -154,6 +186,19 @@ export function LocationForm() {
       />
       <LocationVisibilityField value={visibility} onChange={setVisibility} />
 
+      <fieldset className="space-y-3 rounded-2xl border border-border bg-card p-4 text-card-foreground shadow-sm sm:p-6">
+        <legend className="px-1 font-semibold">Choose a promotion</legend>
+        <p className="text-sm text-muted-foreground">
+          Select Free or choose a one-time promotion. Paid options continue to
+          Polar checkout after your location is saved; prices are shown there.
+        </p>
+        <PromotionPlanSelector
+          value={promotionPlan}
+          onChange={setPromotionPlan}
+          disabled={createLocation.isPending || isStartingCheckout}
+        />
+      </fieldset>
+
       <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
         <Link
           href="/locations"
@@ -167,22 +212,27 @@ export function LocationForm() {
           size="lg"
           disabled={
             createLocation.isPending ||
+            isStartingCheckout ||
             isUploadingImages ||
             hasInvalidTags ||
             (source === "MAPS" && !isGoogleMapsShareUrl(mapsShareUrl.trim()))
           }
           className="min-h-11 w-full sm:w-auto"
         >
-          {isUploadingImages ? (
+          {isUploadingImages || isStartingCheckout ? (
             <LoaderCircleIcon className="animate-spin" />
           ) : (
             <SparklesIcon />
           )}
           {isUploadingImages
             ? "Uploading photos..."
+            : isStartingCheckout
+              ? "Opening checkout..."
             : createLocation.isPending
               ? "Saving your gem..."
-              : "Save location"}
+              : promotionPlan === "FREE"
+                ? "Save location"
+                : "Save & continue to payment"}
         </Button>
       </div>
     </form>
