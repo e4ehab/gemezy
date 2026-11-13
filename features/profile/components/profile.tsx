@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
 import {
@@ -17,6 +16,7 @@ import {
   MessageCircleIcon,
   UserRoundIcon,
 } from 'lucide-react';
+import { ProfileImageEditor } from '@/features/profile/components/profile-image-editor';
 import { toast } from '@/components/ui/toast';
 import {
   normalizeUsername,
@@ -29,13 +29,6 @@ export function Profile() {
   const { data: profile } = useSuspenseProfile();
   const updateName = useUpdateProfileName();
   const [name, setName] = useState(profile.name);
-  const initials = profile.name
-    .trim()
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
   const createdAt = new Intl.DateTimeFormat(undefined, {
     dateStyle: 'long',
   }).format(profile.createdAt);
@@ -85,10 +78,7 @@ export function Profile() {
 
       <section className="rounded-lg border bg-card p-4 text-card-foreground sm:p-6">
         <div className="flex flex-wrap items-center gap-4 sm:gap-5">
-          <Avatar className="size-16 border border-border sm:size-20">
-            <AvatarImage src={profile.image ?? undefined} alt={profile.name} />
-            <AvatarFallback className="text-xl font-semibold">{initials}</AvatarFallback>
-          </Avatar>
+          <ProfileImageEditor image={profile.image} name={profile.name} />
           <div className="min-w-0 flex-1 space-y-1">
             <h2 className="truncate text-xl font-semibold sm:text-2xl">{profile.name}</h2>
             <p className="truncate text-muted-foreground">{profile.email}</p>

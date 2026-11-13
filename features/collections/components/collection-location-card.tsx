@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getGoogleMapsUrl, getPublicLocationSharePath } from "@/features/locations/utils";
 import type { PaidPromotionPlan } from "@/features/locations/constants/promotion-plans";
 
@@ -31,6 +32,7 @@ export type CollectionLocation = {
   address: string | null;
   mapsUrl: string;
   ownerName: string;
+  ownerImage: string | null;
   promotionPlan: PaidPromotionPlan | null;
 };
 
@@ -119,9 +121,15 @@ export function CollectionLocationCard({
 
       <CardContent className="flex grow flex-col gap-1.5 p-4">
         <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold uppercase text-primary ring-1 ring-primary/10">
-            {location.ownerName.slice(0, 1)}
-          </span>
+          <Avatar className="size-7 shrink-0 border border-primary/10">
+            <AvatarImage
+              src={location.ownerImage ?? undefined}
+              alt={`${location.ownerName}'s profile picture`}
+            />
+            <AvatarFallback className="bg-primary/10 text-[10px] font-semibold uppercase text-primary">
+              {location.ownerName.slice(0, 1)}
+            </AvatarFallback>
+          </Avatar>
           <p className="min-w-0 truncate text-xs text-muted-foreground">
             Shared by{" "}
             <span className="font-medium text-foreground/80">

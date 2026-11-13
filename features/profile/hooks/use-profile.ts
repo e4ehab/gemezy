@@ -20,3 +20,14 @@ export function useUpdateProfileName() {
     }),
   );
 }
+
+export function useUpdateProfileImage() {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    trpc.profile.updateImage.mutationOptions({
+      onSuccess: () => queryClient.invalidateQueries(trpc.profile.me.queryFilter()),
+    }),
+  );
+}
