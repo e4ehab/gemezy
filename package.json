@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
+    "postinstall": "prisma generate --config prisma7.config.ts",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
