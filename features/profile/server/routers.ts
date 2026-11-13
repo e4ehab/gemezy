@@ -59,4 +59,27 @@ export const profileRouter = createTRPCRouter({
         select: { name: true },
       });
     }),
+  updateImage: protectedProcedure
+    .input(z.object({ image: z.string().url().max(2048) }))
+    .mutation(async ({ ctx, input }) => {
+      const image = new URL(input.image);
+      const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+      const expectedFolder = `/gemezy/${ctx.session.user.id}/profile/`;
+
+      if (
+        image.protocol !== 'https:' ||
+        image.hostname !== 'res.cloudinary.com' ||
+        !cloudName ||
+        !image.pathname.startsWith(`/${cloudName}/image/upload/`) ||
+        !image.pathname.includes(expectedFolder)
+      ) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Invalid profile image URL' });
+      }
+
+      return prisma.user.update({
+        where: { id: ctx.session.user.id },
+        data: { image: image.toString() },
+        select: { image: true },
+      });
+    }),
 });

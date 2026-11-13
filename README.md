@@ -70,9 +70,9 @@ Run `npm test` to execute the friend request and privacy policy tests. The addit
 
 TODOS
 ------
-- Improve Explore as it grows. Add search, sorting, and pagination rather than loading every public location at once.
+- Improve Explore as it grows. Add search, sorting, and pagination rather than loading every public location at once.✅
 
-- enhance the searching methodology
+- enhance the searching methodology✅
 
 - add notifaction center to the navbar and red dot when new netofification is here ✅
 
@@ -84,9 +84,9 @@ TODOS
 
 - add billing portal (Polar) ✅
 
-- add payment plan to put your location in teh explore top page and increase the views 
+- add payment plan to put your location in the explore top page and increase the views ✅
 
-- create explore folder and add pagination to it later
+- create explore folder and add pagination to it later ✅
 
 - make the private pages has it's own layout and make special button to show them
 
@@ -94,7 +94,7 @@ TODOS
 
 - create saved collection page to save from explore directly
 
-- enable adding and adjusting profile picture
+- enable adding and adjusting profile picture ✅
 
 - enable email verification by sending code to email 
 
@@ -105,3 +105,5 @@ TODOS
 - have action button allow the user to "share, save , etc" for the location , instead of having all the action button on the image card
 
 - push a notification to alarm the user that he is one day a way from turing over the location to free plan
+
+- check how to expand the number of users when it comes to the database and cloudinary image uploader

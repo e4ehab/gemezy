@@ -47,7 +47,7 @@ export const collectionsRouter = createTRPCRouter({
             imagePositionY: true,
             address: true,
             mapsUrl: true,
-            user: { select: { id: true, name: true } },
+            user: { select: { id: true, name: true, image: true } },
             promotion: {
               select: {
                 plan: true,
@@ -66,6 +66,7 @@ export const collectionsRouter = createTRPCRouter({
       ...location,
       ownerId: location.user.id,
       ownerName: location.user.name,
+      ownerImage: location.user.image,
       savedAt: createdAt,
       promotionPlan:
         location.promotion?.status === "ACTIVE" &&

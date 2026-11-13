@@ -18,6 +18,7 @@ type ExploreLocation = {
   address: string | null;
   mapsUrl: string;
   ownerName: string;
+  ownerImage: string | null;
   promotionPlan: PaidPromotionPlan | null;
 };
 
@@ -74,6 +75,7 @@ export async function getExploreLocations(search: string, requestedPage: number)
         location."createdAt",
         owner.id AS "ownerId",
         owner.name AS "ownerName",
+        owner.image AS "ownerImage",
         CASE
           WHEN ${activePromotion} AND promotion.plan = 'SINGLE_ELITE' THEN 3
           WHEN ${activePromotion} AND promotion.plan = 'SINGLE_FEATURED' THEN 2
@@ -117,6 +119,7 @@ export async function getExploreLocations(search: string, requestedPage: number)
       "mapsUrl",
       "ownerId",
       "ownerName",
+      "ownerImage",
       "promotionPlan"
     FROM ranked_locations
     ORDER BY
