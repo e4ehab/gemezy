@@ -25,6 +25,7 @@ model User {
   sessions       Session[]
   accounts       Account[]
   savedLocations SavedLocation[]
+  savedCollectionItems SavedCollectionItem[]
   sentFriendRequests     FriendRequest[] @relation("FriendRequestSender")
   receivedFriendRequests FriendRequest[] @relation("FriendRequestRecipient")
   blocksCreated          FriendBlock[]   @relation("FriendBlocker")
@@ -94,9 +95,23 @@ model SavedLocation {
   userId         String
   user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   promotion      LocationPromotion?
+  savedBy        SavedCollectionItem[]
 
   @@index([userId, createdAt])
   @@map("saved_location")
+}
+
+model SavedCollectionItem {
+  id         String        @id @default(cuid())
+  userId     String
+  locationId String
+  createdAt  DateTime      @default(now())
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location   SavedLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId], map: "saved_collection_item_user_location_key")
+  @@index([userId, createdAt])
+  @@map("saved_collection_item")
 }
 
 model LocationPromotion {

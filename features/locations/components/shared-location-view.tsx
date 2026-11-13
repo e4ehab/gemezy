@@ -2,13 +2,14 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { useCallback, useState } from "react";
 import {
+  ArrowLeftIcon,
   ArrowUpRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
-  ExpandIcon,
   MapPinIcon,
   MessageCircleIcon,
   ShieldCheckIcon,
@@ -23,16 +24,11 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
-import {
   getGoogleMapsUrl,
   getLocationSharePath,
   getPublicLocationSharePath,
 } from "@/features/locations/utils";
+import { cn } from "@/lib/utils";
 
 type SharedLocation = {
   shareId: string;
@@ -52,7 +48,6 @@ export function SharedLocationView({
   const images = location.images ?? [];
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   const activeImage = images[activeImageIndex];
@@ -74,27 +69,6 @@ export function SharedLocationView({
       (index + 1) % images.length
     );
   }, [hasMultipleImages, images.length]);
-
-  // Keyboard navigation for the full-screen viewer.
-  useEffect(() => {
-    if (!isImageViewerOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") {
-        showPreviousImage();
-      }
-
-      if (event.key === "ArrowRight") {
-        showNextImage();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isImageViewerOpen, showNextImage, showPreviousImage]);
 
   const getShareUrl = () => {
     return new URL(
@@ -141,15 +115,26 @@ export function SharedLocationView({
     <main className="mx-auto min-h-screen w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
 
       {/* Header */}
-      <header className="mb-7">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <header className="mb-7 flex min-w-0 items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <MapPinIcon className="size-5" />
           </div>
           <h1 className="min-w-0 wrap-break-word text-xl font-semibold tracking-tight sm:text-2xl">
             {location.name}
           </h1>
         </div>
+        <Link
+          href="/explore"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "min-h-10 shrink-0 gap-2 text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <ArrowLeftIcon className="size-4" aria-hidden="true" />
+          <span className="sm:hidden">Back</span>
+          <span className="hidden sm:inline">Back to Explore</span>
+        </Link>
       </header>
 
       {/* Photo Gallery */}
@@ -178,32 +163,16 @@ export function SharedLocationView({
           {activeImage ? (
             <div className="flex min-w-0 justify-center">
               <div className="relative w-fit max-w-full overflow-hidden rounded-2xl border border-border shadow-lg shadow-black/10">
-                <button
-                  type="button"
-                  onClick={() => setIsImageViewerOpen(true)}
-                  aria-label={`View photo ${activeImageIndex + 1} full size`}
-                  className="group relative block max-w-full cursor-zoom-in focus-visible:outline-2 focus-visible:outline-primary"
-                >
-                  <Image
-                    src={activeImage}
-                    alt={`${location.name} photo ${activeImageIndex + 1}`}
-                    width={1600}
-                    height={1200}
-                    unoptimized
-                    priority={activeImageIndex === 0}
-                    sizes="(max-width: 768px) 100vw, 960px"
-                    className="block h-auto max-h-[min(68dvh,48rem)] w-auto max-w-full"
-                  />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setIsImageViewerOpen(true)}
-                  aria-label="Expand image"
-                  className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white shadow-lg backdrop-blur-md transition hover:bg-black/75 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                >
-                  <ExpandIcon className="size-4" />
-                </button>
+                <Image
+                  src={activeImage}
+                  alt={`${location.name} photo ${activeImageIndex + 1}`}
+                  width={1600}
+                  height={1200}
+                  unoptimized
+                  priority={activeImageIndex === 0}
+                  sizes="(max-width: 768px) 100vw, 960px"
+                  className="block h-auto max-h-[min(68dvh,48rem)] w-auto max-w-full"
+                />
               </div>
             </div>
           ) : (
@@ -352,65 +321,6 @@ export function SharedLocationView({
         </p>
       </footer>
 
-      {/* Full Screen Image Viewer */}
-      <Dialog
-        open={isImageViewerOpen}
-        onOpenChange={setIsImageViewerOpen}
-      >
-        <DialogContent className="flex h-[min(94dvh,900px)] w-[calc(100vw-1rem)] max-w-6xl flex-col gap-3 overflow-hidden rounded-2xl border-white/10 bg-black/95 p-3 text-white sm:w-[calc(100vw-3rem)] sm:p-5">
-
-          <DialogTitle className="sr-only">
-            {location.name} photo {activeImageIndex + 1} of {images.length}
-          </DialogTitle>
-
-          {activeImage && (
-            <>
-              <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl">
-                <Image
-                  src={activeImage}
-                  alt={`${location.name} photo ${activeImageIndex + 1}`}
-                  fill
-                  unoptimized
-                  sizes="(max-width: 768px) 100vw, 1152px"
-                  className="object-contain"
-                />
-
-                {hasMultipleImages && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={showPreviousImage}
-                      aria-label="Previous photo"
-                      className="absolute left-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition hover:bg-black/80 sm:left-4"
-                    >
-                      <ChevronLeftIcon className="size-5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={showNextImage}
-                      aria-label="Next photo"
-                      className="absolute right-2 top-1/2 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/50 text-white backdrop-blur-md transition hover:bg-black/80 sm:right-4"
-                    >
-                      <ChevronRightIcon className="size-5" />
-                    </button>
-                  </>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between gap-3 px-1">
-                <p className="truncate text-sm font-medium text-white/80">
-                  {location.name}
-                </p>
-
-                <span className="shrink-0 rounded-full bg-white/10 px-3 py-1.5 text-xs text-white/70">
-                  {activeImageIndex + 1} / {images.length}
-                </span>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
     </main>
   );
 }
