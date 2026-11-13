@@ -7,7 +7,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test features/friends/server/policies.test.ts features/locations/utils.test.ts features/notifications/server/services.test.ts"
+    "test": "tsx --test features/friends/server/policies.test.ts features/locations/utils.test.ts features/notifications/server/services.test.ts",
+    "all": "mprocs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -66,6 +67,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "mprocs": "^0.9.6",
     "prisma": "^7.10.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",

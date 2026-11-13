@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   BirdhouseIcon,
+  BookmarkIcon,
   CirclePlusIcon,
   EllipsisIcon,
   LoaderCircleIcon,
@@ -46,6 +47,7 @@ import { cn } from "@/lib/utils";
 const menuItems = [
   { title: "My Locations", icon: BirdhouseIcon, url: "/locations" },
   { title: "Explore", icon: TelescopeIcon, url: "/explore" },
+  { title: "Collections", icon: BookmarkIcon, url: "/collections" },
   { title: "Friends", icon: UsersRoundIcon, url: "/friends" },
   { title: "Add New", icon: CirclePlusIcon, url: "/locations/new" },
 ];

@@ -89,3 +89,19 @@ TODOS
 - create explore folder and add pagination to it later
 
 - make the private pages has it's own layout and make special button to show them
+
+- on the top of my locations add filters like "public only, private only, friends only , all"
+
+- create saved collection page to save from explore directly
+
+- enable adding and adjusting profile picture
+
+- enable email verification by sending code to email 
+
+- add the methodology of sending the location to my friends and it will pop up on the notification
+
+- allow the user to adjust and see how the image will look like in the grid
+
+- have action button allow the user to "share, save , etc" for the location , instead of having all the action button on the image card
+
+- push a notification to alarm the user that he is one day a way from turing over the location to free plan

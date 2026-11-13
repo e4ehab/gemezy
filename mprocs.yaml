@@ -1,0 +1,6 @@
+procs:
+  server:
+    cmd: ["npm", "run", "dev"]
+
+  ngrok:
+    cmd: ["ngrok", "http", "3000"]

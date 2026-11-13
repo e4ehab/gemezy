@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { MapPinIcon, UsersRoundIcon } from "lucide-react";
+import { MapPinIcon, SearchIcon, UsersRoundIcon } from "lucide-react";
 import {
   CommandEmpty,
   CommandGroup,
@@ -16,6 +16,7 @@ import { useTRPC } from "@/trpc/client";
 import { FRIEND_PUBLIC_ID_PATTERN } from "@/features/friends/constants";
 import { LOCATION_PUBLIC_ID_PATTERN } from "@/features/locations/constants";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ExploreSearch } from "@/features/explore/components/explore-search";
 
 interface Props {
   open: boolean;
@@ -34,13 +35,21 @@ export const DashboardCommand = ({ open, setOpen }: Props) => {
     ...trpc.locations.getMany.queryOptions(),
     enabled: open,
   });
+  const normalizedSearch = search.trim().toLowerCase().replace(/^#/, "");
+  const exploreLocationsQuery = useQuery({
+    ...trpc.explore.searchPublic.queryOptions({ search: normalizedSearch }),
+    enabled: open && normalizedSearch.length > 0,
+  });
   const friendsQuery = useQuery({
     ...trpc.friends.getMany.queryOptions(),
     enabled: open,
   });
   const locations = locationsQuery.data?.items ?? [];
   const friends = friendsQuery.data?.friends ?? [];
-  const normalizedSearch = search.trim().toLowerCase().replace(/^#/, "");
+  const ownedLocationIds = new Set(locations.map((location) => location.publicId));
+  const exploreLocations = (exploreLocationsQuery.data ?? []).filter(
+    (location) => !ownedLocationIds.has(location.publicId),
+  );
   const canonicalId = search.trim().toUpperCase();
   const isFriendId = FRIEND_PUBLIC_ID_PATTERN.test(search.trim());
   const isLocationId = LOCATION_PUBLIC_ID_PATTERN.test(search.trim());
@@ -72,10 +81,15 @@ export const DashboardCommand = ({ open, setOpen }: Props) => {
   const isFriendProfilePending =
     isFriendId && !friendWithId && friendProfileQuery.isPending;
   const isPending =
-    locationsQuery.isPending || friendsQuery.isPending || isFriendProfilePending;
-  const isError = locationsQuery.isError || friendsQuery.isError;
+    locationsQuery.isPending ||
+    friendsQuery.isPending ||
+    isFriendProfilePending ||
+    (normalizedSearch.length > 0 && exploreLocationsQuery.isPending);
+  const isError =
+    locationsQuery.isError || friendsQuery.isError || exploreLocationsQuery.isError;
   const hasResults =
     matchingLocations.length > 0 ||
+    exploreLocations.length > 0 ||
     matchingFriends.length > 0 ||
     (isFriendId && Boolean(friendUsername));
 
@@ -154,7 +168,7 @@ export const DashboardCommand = ({ open, setOpen }: Props) => {
                 ))}
               </CommandGroup>
             )}
-            {matchingLocations.length > 0 && (
+            {matchingLocations.length > 0 || exploreLocations.length > 0 ? (
               <CommandGroup heading="Locations">
                 {matchingLocations.map((location) => (
                   <CommandItem
@@ -164,34 +178,53 @@ export const DashboardCommand = ({ open, setOpen }: Props) => {
                       setOpen(false);
                       router.push(`/locations/${encodeURIComponent(location.slug)}`);
                     }}
-                    className="items-start gap-3 px-3 py-3"
+                    className="gap-3 px-3 py-3"
                   >
-                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                       <MapPinIcon className="size-4" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium">{location.name}</span>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                        {location.locationName} · {location.publicId}
+                      <span className="mt-0.5 block truncate font-mono text-xs text-muted-foreground">
+                        {location.publicId}
                       </span>
-                      {location.tags.length > 0 && (
-                        <span className="mt-2 flex flex-wrap gap-1.5">
-                          {location.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="rounded-md border px-1.5 py-0.5 text-[11px] text-muted-foreground"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </span>
-                      )}
                     </span>
-                    <span className="shrink-0 self-center font-mono text-[10px] text-muted-foreground">
-                      {location.publicId}
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      My locations
                     </span>
                   </CommandItem>
                 ))}
+                <ExploreSearch
+                  locations={exploreLocations}
+                  onSelect={(href) => {
+                    setOpen(false);
+                    router.push(href);
+                  }}
+                />
+              </CommandGroup>
+            ) : null}
+            {normalizedSearch.length > 0 && (
+              <CommandGroup heading="Explore">
+                <CommandItem
+                  value={`search all Explore places ${normalizedSearch}`}
+                  onSelect={() => {
+                    setOpen(false);
+                    router.push(
+                      `/explore?search=${encodeURIComponent(search.trim())}`,
+                    );
+                  }}
+                  className="gap-3 px-3 py-3"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <SearchIcon className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate font-medium">
+                    See all Explore results for “{search.trim()}”
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    Explore
+                  </span>
+                </CommandItem>
               </CommandGroup>
             )}
             {!hasResults && (

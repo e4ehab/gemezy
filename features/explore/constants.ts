@@ -13,4 +13,4 @@ export const LOCATION_REPORT_REASON_LABELS: Record<LocationReportReason, string>
   OTHER: "Other",
 };
 
-export const EXPLORE_PAGE_SIZE = 12;
+export const EXPLORE_PAGE_SIZE = 10;
