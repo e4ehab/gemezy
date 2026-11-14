@@ -25,11 +25,6 @@ const cinzel = Cinzel({
 export const metadata: Metadata = {
   title: "Gemezy",
   description: "save your hidden gems and share them with the world",
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/apple-touch-icon.png",
-  },
 };
 
 export default function RootLayout({

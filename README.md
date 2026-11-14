@@ -107,3 +107,12 @@ TODOS
 - push a notification to alarm the user that he is one day a way from turing over the location to free plan
 
 - check how to expand the number of users when it comes to the database and cloudinary image uploader
+
+- on the top of the my locations show different ways to show my location default to all locations "all,private,public,friends only"
+- optimize the app for mobile devices
+
+- add save login session on the device instead of logging in over and over 
+
+- send a six digit code to verify the email
+
+- update nodebase signin socials
