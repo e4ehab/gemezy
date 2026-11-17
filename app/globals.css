@@ -60,6 +60,7 @@
     @apply bg-background font-sans;
     min-height: 100%;
     overflow-x: clip;
+    overscroll-behavior-y: none;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -67,6 +68,7 @@
     @apply bg-background text-foreground;
     min-height: 100dvh;
     overflow-x: clip;
+    overscroll-behavior-y: none;
   }
   html::-webkit-scrollbar,
   body::-webkit-scrollbar {
