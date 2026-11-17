@@ -40,10 +40,10 @@ export default function RootLayout({
         style={{ backgroundColor: 'var(--background)' }}
         suppressHydrationWarning
       >
-        <body className={`${inter.variable} ${cinzel.variable} antialiased bg-background min-h-screen`}>
+        <body className={`${inter.variable} ${cinzel.variable} antialiased bg-background`}>
           <NuqsAdapter>
             <ThemeProvider>
-              <main className="bg-background min-h-screen">
+              <main className="bg-background">
                 {children}
               </main>
               <Toaster />

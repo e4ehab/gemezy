@@ -40,7 +40,7 @@ export const DashboardNavbar = () => {
       <DashboardCommand open={commandOpen} setOpen={setCommandOpen} />
 
       <nav
-        className="sticky top-0 z-50 flex shrink-0 items-center gap-1 border-b border-sidebar-border bg-sidebar px-2 py-2 text-sidebar-foreground md:gap-0 md:px-4 md:py-3"
+        className="sticky top-0 z-50 flex w-full max-w-full shrink-0 items-center gap-1 border-b border-sidebar-border bg-sidebar px-2 py-2 text-sidebar-foreground md:gap-0 md:px-4 md:py-3"
       >
         <div className="flex min-w-0 flex-1 items-center gap-1 md:hidden">
           <Button
