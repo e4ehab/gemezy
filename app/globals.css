@@ -55,16 +55,18 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    overscroll-behavior-y: none;
+  }
+  html {
+    @apply bg-background font-sans;
+    min-height: 100%;
+    overflow-x: clip;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
   body {
     @apply bg-background text-foreground;
-    overscroll-behavior-y: none;
-  }
-  html {
-    @apply font-sans;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    min-height: 100dvh;
+    overflow-x: clip;
   }
   html::-webkit-scrollbar,
   body::-webkit-scrollbar {
